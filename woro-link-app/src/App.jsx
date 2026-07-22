@@ -43,6 +43,39 @@ function formatF(n) {
   return n.toLocaleString("fr-FR").replace(/,/g, " ");
 }
 
+// Compare du texte sans tenir compte des accents ni de la casse
+// (utile car les catégories Odoo sont parfois en majuscules avec accents)
+function normalize(str) {
+  return (str || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+}
+
+// Pour chaque catégorie de l'app, quels mots-clés chercher dans le vrai
+// catalogue Odoo (soit dans la catégorie produit, soit dans le nom du produit).
+const CATEGORY_FILTERS = {
+  "Réseaux": { field: "category", keywords: ["MATERIEL ACTIF", "WIFI", "TELEPHONIE", "SWITCH", "KVM"] },
+  "Onduleurs": { field: "name", keywords: ["ONDULEUR", "UPS"] },
+  "Informatique": { field: "category", keywords: ["PERIPHERIQUES", "USB", "ADAPTATEUR", "HDMI"], excludeNameKeywords: ["ONDULEUR"] },
+  "Vidéosurveillance": { field: "category", keywords: ["VIDEOSURVEILLANCE", "MAISON CONNECTEE", "SECURITE"] },
+  "Câblage": { field: "category", keywords: ["CABLAGE", "FIBRE", "CORDON", "BAIE"] },
+};
+
+function matchesCategoryFilter(product, label) {
+  const filter = CATEGORY_FILTERS[label];
+  if (!filter) return false;
+  const haystack = normalize(filter.field === "name" ? product.name : (product.category || product.name));
+  const hit = filter.keywords.some((k) => haystack.includes(normalize(k)));
+  if (!hit) return false;
+  if (filter.excludeNameKeywords) {
+    const nameNorm = normalize(product.name);
+    if (filter.excludeNameKeywords.some((k) => nameNorm.includes(normalize(k)))) return false;
+  }
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // SITE_CONFIG — un objet par boutique. C'est ici qu'on branche le
 // white-labeling : couleur d'accent, nom, catégories, catalogue.
@@ -189,7 +222,7 @@ function TopBar({ title, accent, onBack, right }) {
 // ---------------------------------------------------------------------------
 // Écran : Accueil
 // ---------------------------------------------------------------------------
-function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading }) {
+function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading, onOpenSearch }) {
   return (
     <div className="pb-24">
       <div className="flex gap-1 px-3 pt-2 pb-1 bg-white border-b border-black/5">
@@ -217,10 +250,10 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading 
             <p className="text-xs mt-1" style={{ color: `${TOKENS.paper}99` }}>{config.tagline}</p>
           </div>
         </div>
-        <div className="relative flex items-center gap-2 bg-white rounded-xl px-3 py-2.5">
+        <button onClick={onOpenSearch} className="relative flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 w-full">
           <Search size={17} color={TOKENS.ink} opacity={0.5} />
           <span className="text-sm" style={{ color: `${TOKENS.ink}66` }}>Rechercher un produit, une marque…</span>
-        </div>
+        </button>
       </header>
 
       <div className="px-5 -mt-3">
@@ -351,16 +384,16 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
 // ---------------------------------------------------------------------------
 // Écran : Catégories détaillées
 // ---------------------------------------------------------------------------
-function CategoriesScreen({ config, accent }) {
+function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch }) {
   const [active, setActive] = useState(0);
   const current = config.categories[active];
   return (
     <div className="flex flex-col pb-24" style={{ minHeight: "70vh" }}>
       <div className="px-4 py-3">
-        <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 bg-white" style={{ border: `1px solid ${TOKENS.ink}14` }}>
+        <button onClick={onOpenSearch} className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 bg-white" style={{ border: `1px solid ${TOKENS.ink}14` }}>
           <Search size={15} color={TOKENS.ink} opacity={0.5} />
-          <span className="text-xs" style={{ color: `${TOKENS.ink}66` }}>Rechercher une catégorie…</span>
-        </div>
+          <span className="text-xs" style={{ color: `${TOKENS.ink}66` }}>Rechercher un produit…</span>
+        </button>
       </div>
       <div className="flex flex-1 min-h-0">
         <div className="w-24 flex-shrink-0" style={{ background: "white", borderRight: `1px solid ${TOKENS.ink}0F` }}>
@@ -378,7 +411,16 @@ function CategoriesScreen({ config, accent }) {
           })}
         </div>
         <div className="flex-1 px-4 py-4">
-          <h2 className="text-sm font-semibold mb-3" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>{current.label}</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>{current.label}</h2>
+          </div>
+          <button
+            onClick={() => onBrowseCategory(current.label)}
+            className="w-full rounded-xl py-2.5 mb-3 text-xs font-semibold"
+            style={{ background: `${accent}12`, color: accent }}
+          >
+            Voir tous les produits « {current.label} »
+          </button>
           <div className="grid grid-cols-2 gap-2.5">
             {current.sub.map((s) => (
               <button key={s} className="flex flex-col items-center gap-2 rounded-xl py-3.5 px-2 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
@@ -396,6 +438,108 @@ function CategoriesScreen({ config, accent }) {
 // ---------------------------------------------------------------------------
 // Écran : Panier
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Écran : liste de produits d'une catégorie (vrai catalogue, avec pagination)
+// ---------------------------------------------------------------------------
+function ProductListScreen({ title, products, accent, openProduct }) {
+  const [visibleCount, setVisibleCount] = useState(20);
+  const visible = products.slice(0, visibleCount);
+
+  return (
+    <div className="pb-24 px-5 pt-4">
+      <p className="text-xs mb-3" style={{ color: `${TOKENS.ink}66` }}>
+        {products.length} produit{products.length > 1 ? "s" : ""} trouvé{products.length > 1 ? "s" : ""}
+      </p>
+      {products.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
+          <Search size={32} color={`${TOKENS.ink}33`} />
+          <p className="text-sm font-medium" style={{ color: TOKENS.ink }}>Aucun produit trouvé</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {visible.map((p) => (
+            <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+              <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                <Monitor size={22} color={`${TOKENS.ink}33`} />
+              </div>
+              <div className="p-2.5">
+                <p className="text-[11px] leading-snug font-medium line-clamp-2 h-7" style={{ color: TOKENS.ink }}>{p.name}</p>
+                {p.ref && <p className="text-[9px] mt-0.5" style={{ color: `${TOKENS.ink}55` }}>Réf. {p.ref}</p>}
+                <span className="text-[13px] font-semibold block mt-1" style={{ fontFamily: TOKENS.displayFont, color: accent }}>{formatF(p.price)} F</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+      {visibleCount < products.length && (
+        <button
+          onClick={() => setVisibleCount((v) => v + 20)}
+          className="w-full mt-4 rounded-xl py-3 text-sm font-semibold"
+          style={{ border: `1.5px solid ${accent}`, color: accent }}
+        >
+          Charger plus ({products.length - visibleCount} restants)
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Écran : recherche dans le vrai catalogue
+// ---------------------------------------------------------------------------
+function SearchScreen({ allProducts, accent, openProduct, loading }) {
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => {
+    if (!query.trim()) return [];
+    const q = normalize(query);
+    return (allProducts || []).filter((p) => normalize(p.name).includes(q) || normalize(p.ref).includes(q));
+  }, [query, allProducts]);
+
+  return (
+    <div className="pb-24 px-5 pt-4">
+      <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 bg-white mb-4" style={{ border: `1.5px solid ${accent}` }}>
+        <Search size={16} color={accent} />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Rechercher un produit, une référence…"
+          className="flex-1 text-sm outline-none bg-transparent"
+          style={{ color: TOKENS.ink }}
+        />
+      </div>
+
+      {loading && (
+        <p className="text-xs text-center py-6" style={{ color: `${TOKENS.ink}66` }}>Chargement du catalogue…</p>
+      )}
+
+      {!loading && query.trim() === "" && (
+        <p className="text-xs text-center py-6" style={{ color: `${TOKENS.ink}55` }}>Tapez un mot pour chercher parmi les {(allProducts || []).length} produits</p>
+      )}
+
+      {!loading && query.trim() !== "" && (
+        <>
+          <p className="text-xs mb-3" style={{ color: `${TOKENS.ink}66` }}>{results.length} résultat{results.length > 1 ? "s" : ""}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {results.slice(0, 40).map((p) => (
+              <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+                <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                  <Monitor size={22} color={`${TOKENS.ink}33`} />
+                </div>
+                <div className="p-2.5">
+                  <p className="text-[11px] leading-snug font-medium line-clamp-2 h-7" style={{ color: TOKENS.ink }}>{p.name}</p>
+                  {p.ref && <p className="text-[9px] mt-0.5" style={{ color: `${TOKENS.ink}55` }}>Réf. {p.ref}</p>}
+                  <span className="text-[13px] font-semibold block mt-1" style={{ fontFamily: TOKENS.displayFont, color: accent }}>{formatF(p.price)} F</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function CartScreen({ cart, updateQty, removeItem, accent, goToCheckout }) {
   const items = Object.values(cart);
   const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
@@ -646,6 +790,39 @@ export default function App() {
     return base;
   }, [siteKey, liveProducts]);
 
+  // Le catalogue complet (toutes les references), charge une seule fois,
+  // utilise pour parcourir une categorie en entier et pour la recherche.
+  const [allProducts, setAllProducts] = useState(null);
+  const [allProductsLoading, setAllProductsLoading] = useState(false);
+  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAllProductsLoading(true);
+    fetch(`${RELAY_URL}/api/products`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.products) {
+          setAllProducts(data.products);
+        }
+      })
+      .catch((err) => {
+        console.warn("Catalogue complet indisponible pour le moment:", err.message);
+      })
+      .finally(() => { if (!cancelled) setAllProductsLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const categoryProducts = useMemo(() => {
+    if (!selectedCategoryLabel || !allProducts) return [];
+    return allProducts.filter((p) => matchesCategoryFilter(p, selectedCategoryLabel));
+  }, [selectedCategoryLabel, allProducts]);
+
+  const openCategoryProducts = (label) => {
+    setSelectedCategoryLabel(label);
+    setScreen("productList");
+  };
+
   const cartCount = Object.values(cart).reduce((s, it) => s + it.qty, 0);
 
   const openProduct = (p) => { setSelectedProduct(p); setScreen("product"); };
@@ -680,10 +857,14 @@ export default function App() {
       {screen === "cart" && <TopBar title="Mon panier" onBack={() => setScreen("home")} />}
       {screen === "account" && null /* AccountScreen gère son propre header */}
       {screen === "checkout" && <TopBar title="Validation de commande" onBack={() => setScreen("cart")} />}
+      {screen === "productList" && <TopBar title={selectedCategoryLabel || "Produits"} onBack={() => setScreen("categories")} />}
+      {screen === "search" && <TopBar title="Recherche" onBack={() => setScreen("home")} />}
 
-      {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} />}
+      {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} />}
       {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
-      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} />}
+      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} />}
+      {screen === "productList" && <ProductListScreen title={selectedCategoryLabel} products={categoryProducts} accent={config.accent} openProduct={openProduct} />}
+      {screen === "search" && <SearchScreen allProducts={allProducts} accent={config.accent} openProduct={openProduct} loading={allProductsLoading} />}
       {screen === "cart" && <CartScreen cart={cart} updateQty={updateQty} removeItem={removeItem} accent={config.accent} goToCheckout={() => setScreen("checkout")} />}
       {screen === "account" && <AccountScreen accent={config.accent} />}
       {screen === "checkout" && <CheckoutScreen cart={cart} accent={config.accent} goBack={() => setScreen("home")} />}
