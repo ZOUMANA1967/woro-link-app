@@ -6,6 +6,7 @@ import {
   ShieldCheck, Truck, Minus, Plus, Trash2, Tag, ShoppingBag,
   MapPin, CreditCard, Headphones, Settings, LogOut,
   Smartphone, Wallet, Banknote, Check, Package,
+  Router, Server, Wrench, Usb, Phone, Plug, Speaker,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -77,13 +78,32 @@ function normalize(str) {
 
 // Pour chaque catégorie de l'app, quels mots-clés chercher dans le vrai
 // catalogue Odoo (soit dans la catégorie produit, soit dans le nom du produit).
-const CATEGORY_FILTERS = {
-  "Réseaux": { field: "category", keywords: ["MATERIEL ACTIF", "WIFI", "TELEPHONIE", "SWITCH", "KVM"] },
-  "Onduleurs": { field: "name", keywords: ["ONDULEUR", "UPS"] },
-  "Informatique": { field: "category", keywords: ["PERIPHERIQUES", "USB", "ADAPTATEUR", "HDMI"], excludeNameKeywords: ["ONDULEUR"] },
-  "Vidéosurveillance": { field: "category", keywords: ["VIDEOSURVEILLANCE", "MAISON CONNECTEE", "SECURITE"] },
-  "Câblage": { field: "category", keywords: ["CABLAGE", "FIBRE", "CORDON", "BAIE"] },
-};
+// Les 21 vraies catégories du catalogue Odoo, dans le même ordre que sur
+// www.z-reseaux.com — un produit y est rattaché si son chemin de catégorie
+// Odoo contient exactement ce nom.
+const ODOO_CATEGORIES = [
+  { icon: Cable, label: "RESEAU, MATERIEL CABLAGE" },
+  { icon: Wrench, label: "SUPPORT" },
+  { icon: Cable, label: "CORDON RJ45" },
+  { icon: Router, label: "RESEAU, MATERIEL ACTIF" },
+  { icon: Package, label: "COFFRETS RESEAUX" },
+  { icon: Monitor, label: "HDMI" },
+  { icon: Camera, label: "VIDÉOSURVEILLANCE ET SÉCURITÉ" },
+  { icon: Server, label: "BAIE" },
+  { icon: Wrench, label: "OUTILLAGE ET MESURES" },
+  { icon: Monitor, label: "PERIPHERIQUES, AGENCEMENT, MOBILIER" },
+  { icon: Camera, label: "ACCESSOIRES CAMERA" },
+  { icon: Cable, label: "CORDONS INFORMATIQUE" },
+  { icon: Router, label: "KVM, SWITCHS, SPLITTERS" },
+  { icon: HomeIcon, label: "MAISON CONNECTEE" },
+  { icon: Speaker, label: "MULTIMEDIA ET SONORISATION" },
+  { icon: Cable, label: "CÂBLES ETHERNET" },
+  { icon: Zap, label: "FIBRE OPTIQUE" },
+  { icon: Usb, label: "PRODUITS USB" },
+  { icon: Wifi, label: "RESEAU WIFI" },
+  { icon: Phone, label: "TELEPHONIE" },
+  { icon: Plug, label: "ADAPTATEURS" },
+];
 
 // Extrait un nom de sous-categorie lisible depuis le chemin Odoo
 // (ex: "All / Saleable / RESEAU, MATERIEL ACTIF / Switch manageable" -> "Switch manageable")
@@ -92,21 +112,14 @@ function getSubcategoryLabel(product) {
   if (!raw) return "Autres";
   const parts = raw.split("/").map((s) => s.trim()).filter(Boolean);
   const last = parts[parts.length - 1] || "Autres";
-  // Evite les doublons du genre "Switch manageable" repete comme seul segment
   return last;
 }
 
+// Un produit appartient a une categorie si son chemin Odoo contient
+// exactement le nom de cette categorie (comparaison sans accents/casse).
 function matchesCategoryFilter(product, label) {
-  const filter = CATEGORY_FILTERS[label];
-  if (!filter) return false;
-  const haystack = normalize(filter.field === "name" ? product.name : (product.category || product.name));
-  const hit = filter.keywords.some((k) => haystack.includes(normalize(k)));
-  if (!hit) return false;
-  if (filter.excludeNameKeywords) {
-    const nameNorm = normalize(product.name);
-    if (filter.excludeNameKeywords.some((k) => nameNorm.includes(normalize(k)))) return false;
-  }
-  return true;
+  const haystack = normalize(product.category || "");
+  return haystack.includes(normalize(label));
 }
 
 // ---------------------------------------------------------------------------
@@ -119,13 +132,7 @@ const SITE_CONFIGS = {
     tagline: "Équipements réseaux & IT",
     accent: "#E30613",
     logo: LOGOS["z-reseaux"],
-    categories: [
-      { icon: Wifi, label: "Réseaux", sub: ["Switchs", "Routeurs", "Points d'accès WiFi", "Modems 4G/5G", "Répéteurs", "Cartes réseau"] },
-      { icon: Zap, label: "Onduleurs", sub: ["Onduleurs 1000VA", "Onduleurs 1500VA", "Onduleurs 2000VA+", "Stabilisateurs", "Batteries", "Chargeurs"] },
-      { icon: Monitor, label: "Informatique", sub: ["Ordinateurs portables", "Unités centrales", "Écrans", "Claviers & souris", "Imprimantes", "Stockage"] },
-      { icon: Camera, label: "Vidéosurveillance", sub: ["Caméras IP", "Caméras analogiques", "Enregistreurs NVR/DVR", "Disques durs", "Kits complets"] },
-      { icon: Cable, label: "Câblage", sub: ["Câble réseau Cat6", "Baies de brassage", "Connecteurs RJ45", "Goulottes", "Fibre optique"] },
-    ],
+    categories: ODOO_CATEGORIES,
     // Sélection issue de votre export Odoo réel (Produit__product_template_.xlsx)
     products: [
       { id: "1105007", ref: "1105007", name: "Netgear WNDAP660 Point d'accès 450Mbps Dual-band PoE", price: 550800 },
@@ -141,13 +148,7 @@ const SITE_CONFIGS = {
     tagline: "Réseaux & Communications",
     accent: "#97B822",
     logo: LOGOS["teeshopafrica"],
-    categories: [
-      { icon: Wifi, label: "Réseaux", sub: ["Switchs", "Routeurs", "Points d'accès WiFi", "Modems 4G/5G", "Répéteurs", "Cartes réseau"] },
-      { icon: Zap, label: "Onduleurs", sub: ["Onduleurs 1000VA", "Onduleurs 1500VA", "Onduleurs 2000VA+", "Stabilisateurs", "Batteries", "Chargeurs"] },
-      { icon: Monitor, label: "Informatique", sub: ["Ordinateurs portables", "Unités centrales", "Écrans", "Claviers & souris", "Imprimantes", "Stockage"] },
-      { icon: Camera, label: "Vidéosurveillance", sub: ["Caméras IP", "Caméras analogiques", "Enregistreurs NVR/DVR", "Disques durs", "Kits complets"] },
-      { icon: Cable, label: "Câblage", sub: ["Câble réseau Cat6", "Baies de brassage", "Connecteurs RJ45", "Goulottes", "Fibre optique"] },
-    ],
+    categories: ODOO_CATEGORIES,
     products: [
       { id: "p1", name: "Écouteurs sans fil Pro", price: 15000, old: 19000, badge: "-21%", rating: 4.3, reviewCount: 88, sold: "210 vendus" },
       { id: "p2", name: "Montre connectée Sport", price: 22000, old: null, badge: null, rating: 4.5, reviewCount: 33, sold: "70 vendus" },
@@ -160,13 +161,7 @@ const SITE_CONFIGS = {
     tagline: "Le coeur du réseau",
     accent: "#0066CC",
     logo: LOGOS["backbone-ivoire"],
-    categories: [
-      { icon: Wifi, label: "Réseaux", sub: ["Switchs", "Routeurs", "Points d'accès WiFi", "Modems 4G/5G", "Répéteurs", "Cartes réseau"] },
-      { icon: Zap, label: "Onduleurs", sub: ["Onduleurs 1000VA", "Onduleurs 1500VA", "Onduleurs 2000VA+", "Stabilisateurs", "Batteries", "Chargeurs"] },
-      { icon: Monitor, label: "Informatique", sub: ["Ordinateurs portables", "Unités centrales", "Écrans", "Claviers & souris", "Imprimantes", "Stockage"] },
-      { icon: Camera, label: "Vidéosurveillance", sub: ["Caméras IP", "Caméras analogiques", "Enregistreurs NVR/DVR", "Disques durs", "Kits complets"] },
-      { icon: Cable, label: "Câblage", sub: ["Câble réseau Cat6", "Baies de brassage", "Connecteurs RJ45", "Goulottes", "Fibre optique"] },
-    ],
+    categories: ODOO_CATEGORIES,
     products: [
       { id: "p1", name: "Onduleur industriel 3kVA", price: 310000, old: 355000, badge: "-13%", rating: 4.7, reviewCount: 22, sold: "35 vendus" },
       { id: "p2", name: "Baie de brassage 42U", price: 185000, old: null, badge: null, rating: 4.5, reviewCount: 14, sold: "18 vendus" },
@@ -253,7 +248,7 @@ function TopBar({ title, accent, onBack, right }) {
 // ---------------------------------------------------------------------------
 // Écran : Accueil
 // ---------------------------------------------------------------------------
-function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading, onOpenSearch }) {
+function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading, onOpenSearch, onSeeAllCategories }) {
   return (
     <div className="pb-24">
       {!isOnRealStoreDomain() && (
@@ -300,14 +295,19 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
       </div>
 
       <section className="px-5 mt-6">
-        <h2 className="text-sm font-semibold mb-3" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>Catégories</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>Catégories</h2>
+          <button onClick={onSeeAllCategories} className="flex items-center text-xs" style={{ color: config.accent }}>
+            Tout voir <ChevronRight size={14} />
+          </button>
+        </div>
         <div className="grid grid-cols-3 gap-3">
-          {config.categories.map(({ icon: Icon, label }, i) => (
-            <button key={i} className="flex flex-col items-center gap-1.5 rounded-xl py-3 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+          {config.categories.slice(0, 6).map(({ icon: Icon, label }, i) => (
+            <button key={i} onClick={onSeeAllCategories} className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: `${config.accent}1A` }}>
                 <Icon size={18} color={config.accent} />
               </div>
-              <span className="text-[11px] font-medium" style={{ color: TOKENS.ink }}>{label}</span>
+              <span className="text-[10px] font-medium leading-tight text-center line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
             </button>
           ))}
         </div>
@@ -450,7 +450,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
         </button>
       </div>
       <div className="flex flex-1 min-h-0">
-        <div className="w-24 flex-shrink-0" style={{ background: "white", borderRight: `1px solid ${TOKENS.ink}0F` }}>
+        <div className="w-24 flex-shrink-0 overflow-y-auto" style={{ background: "white", borderRight: `1px solid ${TOKENS.ink}0F`, maxHeight: "calc(100vh - 130px)" }}>
           {config.categories.map(({ icon: Icon, label }, i) => {
             const isActive = i === active;
             return (
@@ -459,7 +459,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
                 <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: isActive ? `${accent}1A` : `${TOKENS.ink}0A` }}>
                   <Icon size={15} color={isActive ? accent : `${TOKENS.ink}88`} />
                 </div>
-                <span className="text-[10px] text-center leading-tight px-1" style={{ color: isActive ? TOKENS.ink : `${TOKENS.ink}77`, fontWeight: isActive ? 600 : 400 }}>{label}</span>
+                <span className="text-[9.5px] text-center leading-tight px-1 line-clamp-3" style={{ color: isActive ? TOKENS.ink : `${TOKENS.ink}77`, fontWeight: isActive ? 600 : 400 }}>{label}</span>
               </button>
             );
           })}
@@ -939,7 +939,7 @@ export default function App() {
       {screen === "productList" && <TopBar title={selectedSubcategoryLabel ? `${selectedCategoryLabel} · ${selectedSubcategoryLabel}` : (selectedCategoryLabel || "Produits")} onBack={() => setScreen("categories")} />}
       {screen === "search" && <TopBar title="Recherche" onBack={() => setScreen("home")} />}
 
-      {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} />}
+      {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} onSeeAllCategories={() => setScreen("categories")} />}
       {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
       {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} />}
       {screen === "productList" && <ProductListScreen title={selectedCategoryLabel} products={categoryProducts} accent={config.accent} openProduct={openProduct} />}
