@@ -105,6 +105,34 @@ const ODOO_CATEGORIES = [
   { icon: Plug, label: "ADAPTATEURS" },
 ];
 
+// Sous-categories officielles de www.z-reseaux.com, fournies par l'utilisateur
+// et verifiees directement sur le site. Sert a afficher la liste complete et
+// dans le bon ordre, meme si le catalogue en direct n'a pas encore de produit
+// dans une sous-categorie donnee.
+const ODOO_SUBCATEGORIES = {
+  "RESEAU, MATERIEL CABLAGE": ["Embases", "Manchons pour RJ45", "Coupleurs et éclateurs de paire", "Connectiques RJ45", "Repérage", "Vis et écrous cage", "Serre câble", "Plateaux, tiroirs et glissières", "Boitiers équipes standards", "Prises informatiques mosaic Legrand", "Prises informatiques EFAPEL", "Boitiers vides", "Plastrons et prise secteur", "Goulotte Legrand", "Goulotte EFAPEL", "Panneaux de brassage équipés", "Panneaux de brassages vides"],
+  "SUPPORT": ["Supports Muraux", "Supports Plafond", "Supports De Bureau", "Support Notebook", "Supports Video Projecteur", "Stand Pour Ecran", "Supports Tablettes/telephone"],
+  "CORDON RJ45": ["Cordon RJ45 CAT 5e", "Cordon RJ45 CAT 6", "Cordon RJ45 CAT 6a", "Cordon RJ45 CAT 7", "Cordon RJ45 CAT 8,1"],
+  "RESEAU, MATERIEL ACTIF": ["Switchs 10/100mbps", "Switchs Gigabit", "Switchs Poe Power Over", "Switchs Fibre Optique", "CPL", "Univers industriel", "Cartes et Adaptateurs Réseaux", "Serveurs Réseaux", "Accessoires Power Over Ethernet (Poe)"],
+  "COFFRETS RESEAUX": ["Coffrets Pro", "Coffrets Pivotant", "Coffrets Etanches", "Coffrets Kit", "Coffret 10\"", "Coffret Slim", "Accessoires 19\""],
+  "HDMI": ["Cordons Hdmi", "Adaptateurs Hdmi", "Splitter Hdmi", "Switchs Hdmi", "Deport Hdmi", "Connecteurs Hdmi"],
+  "VIDÉOSURVEILLANCE ET SÉCURITÉ": ["Cameras IP Exterieures", "Cameras IP Interieures Jour et Nuit", "Cameras IP Wifi", "Detecteurs et Avertisseurs", "Kits de videosurveillance IP", "Camera Solaire", "Kits videosurveillance PoE", "Ecrans LCD videosurveillance", "Enregistreurs Numeriques IP et NVR"],
+  "BAIE": ["Baie De Brassage", "Baie Serveurs", "Bati Rack", "Accessoires Baie", "Bandeaux D'alimentation"],
+  "OUTILLAGE ET MESURES": ["Pince Rj", "Pince A Sertir", "Outils D'insertion", "Dénudeurs", "Pinces", "Testeurs", "Tournevis", "Trousses A Outils", "Eclairage", "Enrouleurs/derouleurs De Cables", "Multimètres", "Colliers, liens et organisateurs de câbles", "Boîtiers et valises de rangement"],
+  "PERIPHERIQUES, AGENCEMENT, MOBILIER": ["Etiqueteuses Professionnelles", "Rubans Etiqueteuses", "Lecteurs Code-barres", "Onduleurs", "Alimentations Électriques", "Accessoires Électriques", "Batteries, piles", "Multiprises Et Enrouleurs", "Mobilier de bureau", "Antivols"],
+  "ACCESSOIRES CAMERA": ["Alimentations pour cameras", "Cordon audio video et Informatique", "Materiels d'installation"],
+  "CORDONS INFORMATIQUE": ["Alimentation", "Displayport", "Fibre Optique", "HDMI", "Ps/2", "Rj45 Ethernet", "Smartphone", "Telephone", "USB", "VGA", "Wifi"],
+  "KVM, SWITCHS, SPLITTERS": ["Rallonges", "KVM", "KVM sur IP", "Cordons Combinés KVM", "Consoles LCD sans KVM", "Prolongateurs VGA, PS2", "Cordon VGA", "Prolongateurs DVI", "Prolongateurs sur IP", "Alimentation sur IP-PDU", "Cordons pieuvre", "Cordons Adaptateurs", "Modules KVM", "Partageur"],
+  "MAISON CONNECTEE": ["Logement connecté", "Voiture connectée", "Accès", "Lumière", "Sécurité et Alarme"],
+  "MULTIMEDIA ET SONORISATION": ["Videoprojecteurs", "Media Players", "Systèmes de conférence filaires", "Systèmes de conférence sans fil", "Solutions de visite guidée", "Haut-parleurs muraux", "Haut-parleurs plafond", "Enceintes sphériques", "Micros UHF"],
+  "CÂBLES ETHERNET": ["Categorie 5e", "Categorie 6", "Categorie 6a", "Categorie 7 & 7a", "Categorie 8 & 8,1"],
+  "FIBRE OPTIQUE": ["Cordons Monomodes 9/125μ", "Cordons Multimodes 50/125μ", "Cordons Multimodes 62,5/125μ", "Convertisseur Fibre", "Modules Fibre optique", "Convertisseurs Fibre Optique et Châssis", "Cordons Monomode OS2", "Cordons Multimode OM1", "Cordons Multimode OM2", "Cordons Multimode OM3", "Cordons Multimode OM4", "Cordons Multimode OM5", "Cable Fibre Monomode", "Cable Fibre Multimode", "Pigtails Optique", "Adaptateurs/Coupleurs Optique", "Tiroirs Optiques Et Accessoires", "Divers Connectiques", "Outillage Fibre Optique"],
+  "PRODUITS USB": ["Cordon Usb", "Hubs Usb", "Stations D'accueil", "Switchs Usb", "Adaptateurs", "Boitiers Externes", "Convertisseurs Repeteurs", "Chargeurs"],
+  "RESEAU WIFI": ["Cles USB wifi", "Cartes wifi", "Antennes USB wifi", "Points d'accès wifi", "Répéteurs wifi", "Modems wifi", "Routeurs wifi", "Modems et routeurs 3 et 4G", "Modems et routeurs 3G", "Hotspots et bornes wifi", "Plafonnier wifi", "Controleurs wifi", "Antennes intérieures wifi", "Antennes extérieures wifi", "Cordons & accessoires antennes wifi"],
+  "TELEPHONIE": ["Adaptateurs, Repartiteurs, Doubleurs", "Fiches, Prises, Boitiers, Conjoncteurs Et Coupleurs", "Casques Filaires", "Casque Sans Fil", "Casques Et Oreillettes Bluetooth", "Cordons Et Accessoires Casques", "Talkies-walkies", "Teleconference", "Telephonie Filaire", "Telephonie Sans Fil", "Telephonie Voip", "Autocom Ip", "Visioconference"],
+  "ADAPTATEURS": ["Alimentation", "Bluetooth", "Displayport", "Fibre Optique", "Hdmi", "Jack", "Ps/2", "Rj45 Ethernet", "Smartphone", "Telephone", "Usb", "Vga", "Wifi"],
+};
+
 // Extrait un nom de sous-categorie lisible depuis le chemin Odoo
 // (ex: "All / Saleable / RESEAU, MATERIEL ACTIF / Switch manageable" -> "Switch manageable")
 function getSubcategoryLabel(product) {
@@ -113,6 +141,13 @@ function getSubcategoryLabel(product) {
   const parts = raw.split("/").map((s) => s.trim()).filter(Boolean);
   const last = parts[parts.length - 1] || "Autres";
   return last;
+}
+
+// Compte, dans le catalogue en direct, combien de produits appartiennent
+// a une sous-categorie precise (comparaison souple sans accents/casse).
+function countInSubcategory(products, subLabel) {
+  const needle = normalize(subLabel);
+  return products.filter((p) => normalize(p.category || "").includes(needle)).length;
 }
 
 // Un produit appartient a une categorie si son chemin Odoo contient
@@ -428,18 +463,12 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
     return allProducts.filter((p) => matchesCategoryFilter(p, current.label));
   }, [allProducts, current.label]);
 
-  // Regroupe ces produits par vraie sous-categorie Odoo, avec un compteur,
-  // triees des plus fournies aux moins fournies.
+  // Liste officielle des sous-categories (verifiee sur www.z-reseaux.com),
+  // avec le nombre reel de produits en direct dans chacune.
   const subcategories = useMemo(() => {
-    const counts = {};
-    for (const p of currentCategoryProducts) {
-      const sub = getSubcategoryLabel(p);
-      counts[sub] = (counts[sub] || 0) + 1;
-    }
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12);
-  }, [currentCategoryProducts]);
+    const officialList = ODOO_SUBCATEGORIES[current.label] || [];
+    return officialList.map((label) => [label, countInSubcategory(currentCategoryProducts, label)]);
+  }, [currentCategoryProducts, current.label]);
 
   return (
     <div className="flex flex-col pb-24" style={{ minHeight: "70vh" }}>
@@ -891,7 +920,8 @@ export default function App() {
     if (!selectedCategoryLabel || !allProducts) return [];
     let list = allProducts.filter((p) => matchesCategoryFilter(p, selectedCategoryLabel));
     if (selectedSubcategoryLabel) {
-      list = list.filter((p) => getSubcategoryLabel(p) === selectedSubcategoryLabel);
+      const needle = normalize(selectedSubcategoryLabel);
+      list = list.filter((p) => normalize(p.category || "").includes(needle));
     }
     return list;
   }, [selectedCategoryLabel, selectedSubcategoryLabel, allProducts]);
