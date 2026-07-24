@@ -85,6 +85,17 @@ const CATEGORY_FILTERS = {
   "Câblage": { field: "category", keywords: ["CABLAGE", "FIBRE", "CORDON", "BAIE"] },
 };
 
+// Extrait un nom de sous-categorie lisible depuis le chemin Odoo
+// (ex: "All / Saleable / RESEAU, MATERIEL ACTIF / Switch manageable" -> "Switch manageable")
+function getSubcategoryLabel(product) {
+  const raw = product.category;
+  if (!raw) return "Autres";
+  const parts = raw.split("/").map((s) => s.trim()).filter(Boolean);
+  const last = parts[parts.length - 1] || "Autres";
+  // Evite les doublons du genre "Switch manageable" repete comme seul segment
+  return last;
+}
+
 function matchesCategoryFilter(product, label) {
   const filter = CATEGORY_FILTERS[label];
   if (!filter) return false;
@@ -406,9 +417,30 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
 // ---------------------------------------------------------------------------
 // Écran : Catégories détaillées
 // ---------------------------------------------------------------------------
-function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch }) {
+function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allProducts, allProductsLoading }) {
   const [active, setActive] = useState(0);
   const current = config.categories[active];
+
+  // Produits du catalogue reel qui appartiennent a la categorie actuellement
+  // selectionnee dans la colonne de gauche.
+  const currentCategoryProducts = useMemo(() => {
+    if (!allProducts) return [];
+    return allProducts.filter((p) => matchesCategoryFilter(p, current.label));
+  }, [allProducts, current.label]);
+
+  // Regroupe ces produits par vraie sous-categorie Odoo, avec un compteur,
+  // triees des plus fournies aux moins fournies.
+  const subcategories = useMemo(() => {
+    const counts = {};
+    for (const p of currentCategoryProducts) {
+      const sub = getSubcategoryLabel(p);
+      counts[sub] = (counts[sub] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12);
+  }, [currentCategoryProducts]);
+
   return (
     <div className="flex flex-col pb-24" style={{ minHeight: "70vh" }}>
       <div className="px-4 py-3">
@@ -435,6 +467,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch }) {
         <div className="flex-1 px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>{current.label}</h2>
+            {!allProductsLoading && <span className="text-[10px]" style={{ color: `${TOKENS.ink}55` }}>{currentCategoryProducts.length} produits</span>}
           </div>
           <button
             onClick={() => onBrowseCategory(current.label)}
@@ -443,14 +476,29 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch }) {
           >
             Voir tous les produits « {current.label} »
           </button>
-          <div className="grid grid-cols-2 gap-2.5">
-            {current.sub.map((s) => (
-              <button key={s} className="flex flex-col items-center gap-2 rounded-xl py-3.5 px-2 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-                <div className="w-12 h-12 rounded-lg" style={{ background: TOKENS.sand }} />
-                <span className="text-[10.5px] text-center leading-tight" style={{ color: TOKENS.ink }}>{s}</span>
-              </button>
-            ))}
-          </div>
+
+          {allProductsLoading && (
+            <p className="text-xs text-center py-6" style={{ color: `${TOKENS.ink}55` }}>Chargement des sous-catégories…</p>
+          )}
+
+          {!allProductsLoading && (
+            <div className="grid grid-cols-2 gap-2.5">
+              {subcategories.map(([label, count]) => (
+                <button
+                  key={label}
+                  onClick={() => onBrowseCategory(current.label, label)}
+                  className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white text-center"
+                  style={{ border: `1px solid ${TOKENS.ink}0F` }}
+                >
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                    <Monitor size={18} color={`${TOKENS.ink}33`} />
+                  </div>
+                  <span className="text-[10.5px] leading-tight line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
+                  <span className="text-[9px]" style={{ color: `${TOKENS.ink}55` }}>{count} produit{count > 1 ? "s" : ""}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -820,6 +868,7 @@ export default function App() {
   const [allProducts, setAllProducts] = useState(null);
   const [allProductsLoading, setAllProductsLoading] = useState(false);
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(null);
+  const [selectedSubcategoryLabel, setSelectedSubcategoryLabel] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -840,11 +889,16 @@ export default function App() {
 
   const categoryProducts = useMemo(() => {
     if (!selectedCategoryLabel || !allProducts) return [];
-    return allProducts.filter((p) => matchesCategoryFilter(p, selectedCategoryLabel));
-  }, [selectedCategoryLabel, allProducts]);
+    let list = allProducts.filter((p) => matchesCategoryFilter(p, selectedCategoryLabel));
+    if (selectedSubcategoryLabel) {
+      list = list.filter((p) => getSubcategoryLabel(p) === selectedSubcategoryLabel);
+    }
+    return list;
+  }, [selectedCategoryLabel, selectedSubcategoryLabel, allProducts]);
 
-  const openCategoryProducts = (label) => {
+  const openCategoryProducts = (label, subLabel) => {
     setSelectedCategoryLabel(label);
+    setSelectedSubcategoryLabel(subLabel || null);
     setScreen("productList");
   };
 
@@ -882,12 +936,12 @@ export default function App() {
       {screen === "cart" && <TopBar title="Mon panier" onBack={() => setScreen("home")} />}
       {screen === "account" && null /* AccountScreen gère son propre header */}
       {screen === "checkout" && <TopBar title="Validation de commande" onBack={() => setScreen("cart")} />}
-      {screen === "productList" && <TopBar title={selectedCategoryLabel || "Produits"} onBack={() => setScreen("categories")} />}
+      {screen === "productList" && <TopBar title={selectedSubcategoryLabel ? `${selectedCategoryLabel} · ${selectedSubcategoryLabel}` : (selectedCategoryLabel || "Produits")} onBack={() => setScreen("categories")} />}
       {screen === "search" && <TopBar title="Recherche" onBack={() => setScreen("home")} />}
 
       {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} />}
       {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
-      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} />}
+      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} />}
       {screen === "productList" && <ProductListScreen title={selectedCategoryLabel} products={categoryProducts} accent={config.accent} openProduct={openProduct} />}
       {screen === "search" && <SearchScreen allProducts={allProducts} accent={config.accent} openProduct={openProduct} loading={allProductsLoading} />}
       {screen === "cart" && <CartScreen cart={cart} updateQty={updateQty} removeItem={removeItem} accent={config.accent} goToCheckout={() => setScreen("checkout")} />}
