@@ -39,6 +39,28 @@ const LOGOS = {
 // ---------------------------------------------------------------------------
 const RELAY_URL = "https://woro-link-odoo-relay.onrender.com";
 
+// Determine quelle boutique afficher a partir du vrai nom de domaine utilise
+// (ex: app.teeshopafrica.com -> "teeshopafrica"). Si l'adresse ne correspond
+// a aucune boutique connue (ex: l'adresse de test woro-link-app.vercel.app),
+// on revient a "z-reseaux" par defaut.
+const DOMAIN_TO_SITE_KEY = {
+  "app.z-reseaux.com": "z-reseaux",
+  "app.teeshopafrica.com": "teeshopafrica",
+  "app.backbone-ivoire.com": "backbone-ivoire",
+};
+
+function getSiteKeyFromHostname() {
+  if (typeof window === "undefined") return "z-reseaux";
+  return DOMAIN_TO_SITE_KEY[window.location.hostname] || "z-reseaux";
+}
+
+// Vrai si l'app tourne sur l'une des 3 vraies adresses boutique (pas sur
+// l'adresse de test *.vercel.app) -- sert a cacher le selecteur de demo.
+function isOnRealStoreDomain() {
+  if (typeof window === "undefined") return false;
+  return Object.prototype.hasOwnProperty.call(DOMAIN_TO_SITE_KEY, window.location.hostname);
+}
+
 function formatF(n) {
   return n.toLocaleString("fr-FR").replace(/,/g, " ");
 }
@@ -109,12 +131,11 @@ const SITE_CONFIGS = {
     accent: "#97B822",
     logo: LOGOS["teeshopafrica"],
     categories: [
-      { icon: Wifi, label: "Accessoires", sub: ["Écouteurs", "Montres connectées", "Housses", "Supports"] },
-      { icon: Zap, label: "Électro", sub: ["Enceintes", "Chargeurs", "Powerbanks"] },
-      { icon: Monitor, label: "Gadgets", sub: ["Objets connectés", "Accessoires bureau"] },
-      { icon: Camera, label: "Photo", sub: ["Trépieds", "Éclairage", "Micros"] },
-      { icon: Cable, label: "Câbles", sub: ["USB-C", "Lightning", "Adaptateurs"] },
-      { icon: SunMedium, label: "Plein air", sub: ["Lampes solaires", "Sacs", "Gourdes"] },
+      { icon: Wifi, label: "Réseaux", sub: ["Switchs", "Routeurs", "Points d'accès WiFi", "Modems 4G/5G", "Répéteurs", "Cartes réseau"] },
+      { icon: Zap, label: "Onduleurs", sub: ["Onduleurs 1000VA", "Onduleurs 1500VA", "Onduleurs 2000VA+", "Stabilisateurs", "Batteries", "Chargeurs"] },
+      { icon: Monitor, label: "Informatique", sub: ["Ordinateurs portables", "Unités centrales", "Écrans", "Claviers & souris", "Imprimantes", "Stockage"] },
+      { icon: Camera, label: "Vidéosurveillance", sub: ["Caméras IP", "Caméras analogiques", "Enregistreurs NVR/DVR", "Disques durs", "Kits complets"] },
+      { icon: Cable, label: "Câblage", sub: ["Câble réseau Cat6", "Baies de brassage", "Connecteurs RJ45", "Goulottes", "Fibre optique"] },
     ],
     products: [
       { id: "p1", name: "Écouteurs sans fil Pro", price: 15000, old: 19000, badge: "-21%", rating: 4.3, reviewCount: 88, sold: "210 vendus" },
@@ -129,12 +150,11 @@ const SITE_CONFIGS = {
     accent: "#0066CC",
     logo: LOGOS["backbone-ivoire"],
     categories: [
-      { icon: Wifi, label: "Fibre", sub: ["Câble fibre", "Boîtiers", "Soudeuses"] },
-      { icon: Zap, label: "Énergie", sub: ["Groupes électrogènes", "Batteries industrielles"] },
-      { icon: Monitor, label: "Serveurs", sub: ["Serveurs rack", "Stockage NAS"] },
-      { icon: Camera, label: "Sécurité", sub: ["Contrôle d'accès", "Alarmes"] },
-      { icon: Cable, label: "Câblage", sub: ["Baies de brassage", "Cordons"] },
-      { icon: SunMedium, label: "Solaire Pro", sub: ["Kits solaires", "Onduleurs solaires"] },
+      { icon: Wifi, label: "Réseaux", sub: ["Switchs", "Routeurs", "Points d'accès WiFi", "Modems 4G/5G", "Répéteurs", "Cartes réseau"] },
+      { icon: Zap, label: "Onduleurs", sub: ["Onduleurs 1000VA", "Onduleurs 1500VA", "Onduleurs 2000VA+", "Stabilisateurs", "Batteries", "Chargeurs"] },
+      { icon: Monitor, label: "Informatique", sub: ["Ordinateurs portables", "Unités centrales", "Écrans", "Claviers & souris", "Imprimantes", "Stockage"] },
+      { icon: Camera, label: "Vidéosurveillance", sub: ["Caméras IP", "Caméras analogiques", "Enregistreurs NVR/DVR", "Disques durs", "Kits complets"] },
+      { icon: Cable, label: "Câblage", sub: ["Câble réseau Cat6", "Baies de brassage", "Connecteurs RJ45", "Goulottes", "Fibre optique"] },
     ],
     products: [
       { id: "p1", name: "Onduleur industriel 3kVA", price: 310000, old: 355000, badge: "-13%", rating: 4.7, reviewCount: 22, sold: "35 vendus" },
@@ -225,22 +245,24 @@ function TopBar({ title, accent, onBack, right }) {
 function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading, onOpenSearch }) {
   return (
     <div className="pb-24">
-      <div className="flex gap-1 px-3 pt-2 pb-1 bg-white border-b border-black/5">
-        {Object.keys(SITE_CONFIGS).map((key) => (
-          <button
-            key={key}
-            onClick={() => setSiteKey(key)}
-            className="text-[10px] px-2 py-1 rounded-full transition-colors"
-            style={{
-              background: siteKey === key ? TOKENS.ink : "transparent",
-              color: siteKey === key ? TOKENS.paper : TOKENS.ink,
-              border: `1px solid ${TOKENS.ink}`,
-            }}
-          >
-            {SITE_CONFIGS[key].name}
-          </button>
-        ))}
-      </div>
+      {!isOnRealStoreDomain() && (
+        <div className="flex gap-1 px-3 pt-2 pb-1 bg-white border-b border-black/5">
+          {Object.keys(SITE_CONFIGS).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSiteKey(key)}
+              className="text-[10px] px-2 py-1 rounded-full transition-colors"
+              style={{
+                background: siteKey === key ? TOKENS.ink : "transparent",
+                color: siteKey === key ? TOKENS.paper : TOKENS.ink,
+                border: `1px solid ${TOKENS.ink}`,
+              }}
+            >
+              {SITE_CONFIGS[key].name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <header className="relative overflow-hidden px-5 pt-5 pb-7" style={{ background: TOKENS.ink }}>
         <NetworkTrail color={config.accent} />
@@ -754,7 +776,7 @@ function CheckoutScreen({ cart, accent, goBack }) {
 // (panier, boutique active). C'est cette base qui remplace App.jsx.
 // ---------------------------------------------------------------------------
 export default function App() {
-  const [siteKey, setSiteKey] = useState("z-reseaux");
+  const [siteKey, setSiteKey] = useState(getSiteKeyFromHostname);
   const [screen, setScreen] = useState("home"); // home | categories | cart | account | product | checkout
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cart, setCart] = useState({});
@@ -784,7 +806,10 @@ export default function App() {
 
   const config = useMemo(() => {
     const base = SITE_CONFIGS[siteKey];
-    if (siteKey === "z-reseaux" && liveProducts && liveProducts.length > 0) {
+    // Le catalogue Odoo est partagé entre les 3 boutiques : on applique donc
+    // les vrais produits en direct à n'importe quelle boutique active, pas
+    // seulement Z-RESEAUX.
+    if (liveProducts && liveProducts.length > 0) {
       return { ...base, products: liveProducts };
     }
     return base;
