@@ -220,6 +220,24 @@ function NetworkTrail({ color }) {
   );
 }
 
+// Affiche la vraie image du produit (venue d'Odoo). Si elle n'existe pas
+// ou ne charge pas, on retombe proprement sur l'icone de remplacement,
+// sans casser l'affichage.
+function ProductImage({ src, iconSize = 22 }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return <Monitor size={iconSize} color={`${TOKENS.ink}33`} />;
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      className="w-full h-full object-contain"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function StarRow({ rating, size = 12 }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -362,7 +380,7 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
                     {p.badge}
                   </span>
                 )}
-                <Monitor size={26} color={`${TOKENS.ink}33`} />
+                <ProductImage src={p.image} iconSize={26} />
               </div>
               <div className="p-2.5">
                 <p className="text-[11px] leading-snug font-medium line-clamp-2 h-7" style={{ color: TOKENS.ink }}>{p.name}</p>
@@ -376,6 +394,7 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
           ))}
         </div>
       </section>
+
     </div>
   );
 }
@@ -402,7 +421,7 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
       </div>
 
       <div className="-mt-10 h-72 flex items-center justify-center" style={{ background: TOKENS.sand }}>
-        <Monitor size={40} color={`${TOKENS.ink}33`} />
+        <ProductImage src={product.image} iconSize={40} />
       </div>
 
       <div className="px-5 pt-4">
@@ -426,6 +445,13 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
           <div className="flex items-center gap-1.5"><ShieldCheck size={15} color={TOKENS.leaf} /><span className="text-[11px]" style={{ color: TOKENS.ink }}>Garantie 12 mois</span></div>
           <div className="flex items-center gap-1.5"><Truck size={15} color={TOKENS.leaf} /><span className="text-[11px]" style={{ color: TOKENS.ink }}>Livraison 24-48h</span></div>
         </div>
+
+        {product.description && (
+          <div className="mt-5">
+            <h2 className="text-sm font-semibold mb-2" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>Description</h2>
+            <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: `${TOKENS.ink}CC` }}>{product.description}</p>
+          </div>
+        )}
 
         <div className="mt-5 flex items-center justify-between">
           <p className="text-xs font-medium" style={{ color: TOKENS.ink }}>Quantité</p>
@@ -540,26 +566,86 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
 // ---------------------------------------------------------------------------
 // Écran : liste de produits d'une catégorie (vrai catalogue, avec pagination)
 // ---------------------------------------------------------------------------
-function ProductListScreen({ title, products, accent, openProduct }) {
+function ProductListScreen({ title, products, accent, openProduct, isSubcategory, parentCategoryLabel, onBrowseParentCategory, subcategoryLabel }) {
   const [visibleCount, setVisibleCount] = useState(20);
-  const visible = products.slice(0, visibleCount);
+  const [refineGroup, setRefineGroup] = useState(null);
+
+  // 3e niveau (comme chez CAFCA) : si le chemin Odoo continue apres le nom
+  // de la sous-categorie actuelle, on regroupe automatiquement les produits
+  // par ce niveau plus precis, en filigrane, sans rien demander a Odoo.
+  const refineGroups = useMemo(() => {
+    if (!subcategoryLabel) return [];
+    const needle = normalize(subcategoryLabel);
+    const counts = {};
+    for (const p of products) {
+      const segments = (p.category || "").split("/").map((s) => s.trim()).filter(Boolean);
+      const idx = segments.findIndex((s) => normalize(s).includes(needle));
+      if (idx !== -1 && idx < segments.length - 1) {
+        const next = segments[idx + 1];
+        counts[next] = (counts[next] || 0) + 1;
+      }
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [products, subcategoryLabel]);
+
+  const displayedProducts = refineGroup
+    ? products.filter((p) => normalize(p.category || "").includes(normalize(refineGroup)))
+    : products;
+  const visible = displayedProducts.slice(0, visibleCount);
 
   return (
     <div className="pb-24 px-5 pt-4">
+      {refineGroups.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-1 -mt-1">
+          <button
+            onClick={() => setRefineGroup(null)}
+            className="flex-shrink-0 text-[11px] font-medium px-3 py-1.5 rounded-full"
+            style={{ background: !refineGroup ? accent : "white", color: !refineGroup ? TOKENS.paper : TOKENS.ink, border: `1px solid ${!refineGroup ? accent : TOKENS.ink + "22"}` }}
+          >
+            Tout
+          </button>
+          {refineGroups.map(([label, count]) => (
+            <button
+              key={label}
+              onClick={() => setRefineGroup(label)}
+              className="flex-shrink-0 text-[11px] font-medium px-3 py-1.5 rounded-full"
+              style={{ background: refineGroup === label ? accent : "white", color: refineGroup === label ? TOKENS.paper : TOKENS.ink, border: `1px solid ${refineGroup === label ? accent : TOKENS.ink + "22"}` }}
+            >
+              {label} ({count})
+            </button>
+          ))}
+        </div>
+      )}
       <p className="text-xs mb-3" style={{ color: `${TOKENS.ink}66` }}>
-        {products.length} produit{products.length > 1 ? "s" : ""} trouvé{products.length > 1 ? "s" : ""}
+        {displayedProducts.length} produit{displayedProducts.length > 1 ? "s" : ""} trouvé{displayedProducts.length > 1 ? "s" : ""}
       </p>
-      {products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
+      {displayedProducts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3 px-4">
           <Search size={32} color={`${TOKENS.ink}33`} />
-          <p className="text-sm font-medium" style={{ color: TOKENS.ink }}>Aucun produit trouvé</p>
+          {isSubcategory ? (
+            <>
+              <p className="text-sm font-medium" style={{ color: TOKENS.ink }}>Pas encore de produit classé ici</p>
+              <p className="text-xs" style={{ color: `${TOKENS.ink}66` }}>Cette sous-catégorie n'a pas encore de référence rattachée dans le catalogue.</p>
+              {onBrowseParentCategory && (
+                <button
+                  onClick={onBrowseParentCategory}
+                  className="mt-2 rounded-xl px-4 py-2.5 text-xs font-semibold"
+                  style={{ background: `${accent}12`, color: accent }}
+                >
+                  Voir tous les produits « {parentCategoryLabel} »
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-sm font-medium" style={{ color: TOKENS.ink }}>Aucun produit trouvé</p>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {visible.map((p) => (
             <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
-                <Monitor size={22} color={`${TOKENS.ink}33`} />
+                <ProductImage src={p.image} iconSize={22} />
               </div>
               <div className="p-2.5">
                 <p className="text-[11px] leading-snug font-medium line-clamp-2 h-7" style={{ color: TOKENS.ink }}>{p.name}</p>
@@ -570,13 +656,13 @@ function ProductListScreen({ title, products, accent, openProduct }) {
           ))}
         </div>
       )}
-      {visibleCount < products.length && (
+      {visibleCount < displayedProducts.length && (
         <button
           onClick={() => setVisibleCount((v) => v + 20)}
           className="w-full mt-4 rounded-xl py-3 text-sm font-semibold"
           style={{ border: `1.5px solid ${accent}`, color: accent }}
         >
-          Charger plus ({products.length - visibleCount} restants)
+          Charger plus ({displayedProducts.length - visibleCount} restants)
         </button>
       )}
     </div>
@@ -623,7 +709,7 @@ function SearchScreen({ allProducts, accent, openProduct, loading }) {
             {results.slice(0, 40).map((p) => (
               <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
                 <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
-                  <Monitor size={22} color={`${TOKENS.ink}33`} />
+                  <ProductImage src={p.image} iconSize={22} />
                 </div>
                 <div className="p-2.5">
                   <p className="text-[11px] leading-snug font-medium line-clamp-2 h-7" style={{ color: TOKENS.ink }}>{p.name}</p>
@@ -658,7 +744,9 @@ function CartScreen({ cart, updateQty, removeItem, accent, goToCheckout }) {
           <div className="px-5 pt-4 space-y-3">
             {items.map((it) => (
               <div key={it.id} className="flex gap-3 rounded-xl p-3 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-                <div className="w-16 h-16 rounded-lg flex-shrink-0" style={{ background: TOKENS.sand }} />
+                <div className="w-16 h-16 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                  <ProductImage src={it.image} iconSize={18} />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium leading-snug line-clamp-2" style={{ color: TOKENS.ink }}>{it.name}</p>
                   <div className="flex items-center justify-between mt-2">
@@ -799,7 +887,9 @@ function CheckoutScreen({ cart, accent, goBack }) {
           <div className="rounded-xl bg-white overflow-hidden" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
             {items.map((it, i) => (
               <div key={it.id} className="flex gap-3 p-3" style={{ borderBottom: i < items.length - 1 ? `1px solid ${TOKENS.ink}0A` : "none" }}>
-                <div className="w-11 h-11 rounded-lg flex-shrink-0" style={{ background: TOKENS.sand }} />
+                <div className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                  <ProductImage src={it.image} iconSize={14} />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-medium line-clamp-1" style={{ color: TOKENS.ink }}>{it.name}</p>
                   <div className="flex items-center justify-between mt-1">
@@ -972,7 +1062,18 @@ export default function App() {
       {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} onSeeAllCategories={() => setScreen("categories")} />}
       {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
       {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} />}
-      {screen === "productList" && <ProductListScreen title={selectedCategoryLabel} products={categoryProducts} accent={config.accent} openProduct={openProduct} />}
+      {screen === "productList" && (
+        <ProductListScreen
+          title={selectedCategoryLabel}
+          products={categoryProducts}
+          accent={config.accent}
+          openProduct={openProduct}
+          isSubcategory={Boolean(selectedSubcategoryLabel)}
+          parentCategoryLabel={selectedCategoryLabel}
+          onBrowseParentCategory={() => setSelectedSubcategoryLabel(null)}
+          subcategoryLabel={selectedSubcategoryLabel}
+        />
+      )}
       {screen === "search" && <SearchScreen allProducts={allProducts} accent={config.accent} openProduct={openProduct} loading={allProductsLoading} />}
       {screen === "cart" && <CartScreen cart={cart} updateQty={updateQty} removeItem={removeItem} accent={config.accent} goToCheckout={() => setScreen("checkout")} />}
       {screen === "account" && <AccountScreen accent={config.accent} />}
