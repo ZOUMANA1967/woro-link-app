@@ -866,6 +866,7 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
   const [submitting, setSubmitting] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const items = Object.values(cart);
   const PAYMENT_METHODS = [
     { id: "om", icon: Smartphone, label: "Orange Money" },
@@ -876,7 +877,7 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
   const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
   const livraison = 2000;
   const total = subtotal + livraison;
-  const canConfirm = customerName.trim() !== "" && customerPhone.trim() !== "";
+  const canConfirm = customerName.trim() !== "" && customerPhone.trim() !== "" && deliveryAddress.trim() !== "";
 
   return (
     <div className="pb-28">
@@ -900,6 +901,15 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
             type="tel"
             className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
             style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+          />
+          <textarea
+            value={deliveryAddress}
+            onChange={(e) => setDeliveryAddress(e.target.value)}
+            placeholder="Adresse de livraison (quartier, ville, repère...)"
+            rows={2}
+            className="w-full text-xs rounded-lg px-3 py-2.5 outline-none resize-none"
+            style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+
           />
         </div>
 
@@ -957,7 +967,7 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
           disabled={submitting || !canConfirm}
           onClick={async () => {
             setSubmitting(true);
-            await onConfirm({ customerName, customerPhone });
+            await onConfirm({ customerName, customerPhone, deliveryAddress });
             setSubmitting(false);
           }}
         >
@@ -1089,14 +1099,14 @@ export default function App() {
 
   // Envoie la commande au relais : elle apparait dans le panneau
   // d'administration ET declenche la creation d'un vrai devis dans Odoo.
-  const confirmOrder = async ({ customerName, customerPhone } = {}) => {
+  const confirmOrder = async ({ customerName, customerPhone, deliveryAddress } = {}) => {
     const items = Object.values(cart);
     const total = items.reduce((s, it) => s + it.price * it.qty, 0) + 2000;
     try {
       await fetch(`${RELAY_URL}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
-        body: JSON.stringify({ siteKey, items, total, customerName, customerPhone }),
+        body: JSON.stringify({ siteKey, items, total, customerName, customerPhone, deliveryAddress }),
       });
     } catch (err) {
       console.warn("Envoi de la commande impossible pour le moment:", err.message);
