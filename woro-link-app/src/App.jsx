@@ -40,6 +40,10 @@ const LOGOS = {
 // ---------------------------------------------------------------------------
 const RELAY_URL = "https://woro-link-odoo-relay.onrender.com";
 
+// Cle partagee avec le relais (voir APP_KEY cote serveur) -- protection
+// legere contre les robots, pas un vrai systeme de securite.
+const APP_KEY = "c0sKiG1a1SE1xxDfSw8Pota9Y-cRYlzE";
+
 // Determine quelle boutique afficher a partir du vrai nom de domaine utilise
 // (ex: app.teeshopafrica.com -> "teeshopafrica"). Si l'adresse ne correspond
 // a aucune boutique connue (ex: l'adresse de test woro-link-app.vercel.app),
@@ -857,8 +861,11 @@ function AccountScreen({ accent }) {
 // ---------------------------------------------------------------------------
 // Écran : Checkout
 // ---------------------------------------------------------------------------
-function CheckoutScreen({ cart, accent, goBack }) {
+function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
   const [payment, setPayment] = useState("om");
+  const [submitting, setSubmitting] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const items = Object.values(cart);
   const PAYMENT_METHODS = [
     { id: "om", icon: Smartphone, label: "Orange Money" },
@@ -869,18 +876,32 @@ function CheckoutScreen({ cart, accent, goBack }) {
   const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
   const livraison = 2000;
   const total = subtotal + livraison;
+  const canConfirm = customerName.trim() !== "" && customerPhone.trim() !== "";
 
   return (
     <div className="pb-28">
       <div className="px-5 pt-4">
-        <button className="w-full flex items-center gap-3 rounded-xl p-3.5 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${accent}12` }}><MapPin size={16} color={accent} /></div>
-          <div className="flex-1 text-left">
-            <p className="text-xs font-medium" style={{ color: TOKENS.ink }}>Zoumana B. · +225 07 XX XX XX XX</p>
-            <p className="text-[11px] mt-0.5" style={{ color: `${TOKENS.ink}77` }}>Cocody, Abidjan — Côte d'Ivoire</p>
+        <div className="rounded-xl p-3.5 bg-white space-y-2.5" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin size={15} color={accent} />
+            <span className="text-xs font-semibold" style={{ color: TOKENS.ink }}>Vos coordonnées</span>
           </div>
-          <ChevronRight size={15} color={`${TOKENS.ink}55`} />
-        </button>
+          <input
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Nom complet"
+            className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
+            style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+          />
+          <input
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            placeholder="Numéro de téléphone"
+            type="tel"
+            className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
+            style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+          />
+        </div>
 
         <div className="mt-5">
           <h2 className="text-xs font-semibold mb-2" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>Articles ({items.length})</h2>
@@ -930,8 +951,17 @@ function CheckoutScreen({ cart, accent, goBack }) {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white flex items-center gap-3 px-5 py-3.5" style={{ borderTop: `1px solid ${TOKENS.ink}0F` }}>
-        <button className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ background: accent, color: TOKENS.paper }} onClick={goBack}>
-          Confirmer la commande
+        <button
+          className="flex-1 rounded-xl py-3 text-sm font-semibold disabled:opacity-60"
+          style={{ background: accent, color: TOKENS.paper }}
+          disabled={submitting || !canConfirm}
+          onClick={async () => {
+            setSubmitting(true);
+            await onConfirm({ customerName, customerPhone });
+            setSubmitting(false);
+          }}
+        >
+          {submitting ? "Envoi en cours…" : canConfirm ? "Confirmer la commande" : "Renseignez vos coordonnées"}
         </button>
       </div>
     </div>
@@ -947,6 +977,17 @@ export default function App() {
   const [screen, setScreen] = useState("home"); // home | categories | cart | account | product | checkout
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cart, setCart] = useState({});
+
+  // Enregistre une visite pour cette boutique (une seule fois par ouverture
+  // de l'app) -- alimente le panneau d'administration.
+  useEffect(() => {
+    fetch(`${RELAY_URL}/api/visits`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
+      body: JSON.stringify({ siteKey }),
+    }).catch(() => {}); // pas grave si ça échoue, ce n'est qu'une statistique
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Produits en direct depuis Odoo (via le relais). null tant que non chargés.
   const [liveProducts, setLiveProducts] = useState(null);
@@ -1046,6 +1087,26 @@ export default function App() {
     });
   };
 
+  // Envoie la commande au relais : elle apparait dans le panneau
+  // d'administration ET declenche la creation d'un vrai devis dans Odoo.
+  const confirmOrder = async ({ customerName, customerPhone } = {}) => {
+    const items = Object.values(cart);
+    const total = items.reduce((s, it) => s + it.price * it.qty, 0) + 2000;
+    try {
+      await fetch(`${RELAY_URL}/api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
+        body: JSON.stringify({ siteKey, items, total, customerName, customerPhone }),
+      });
+    } catch (err) {
+      console.warn("Envoi de la commande impossible pour le moment:", err.message);
+      // On continue quand meme -- le client ne doit pas rester bloque
+      // meme si le relais est momentanement injoignable.
+    }
+    setCart({});
+    setScreen("home");
+  };
+
   const showBottomNav = ["home", "categories", "cart", "account"].includes(screen);
 
   return (
@@ -1077,7 +1138,7 @@ export default function App() {
       {screen === "search" && <SearchScreen allProducts={allProducts} accent={config.accent} openProduct={openProduct} loading={allProductsLoading} />}
       {screen === "cart" && <CartScreen cart={cart} updateQty={updateQty} removeItem={removeItem} accent={config.accent} goToCheckout={() => setScreen("checkout")} />}
       {screen === "account" && <AccountScreen accent={config.accent} />}
-      {screen === "checkout" && <CheckoutScreen cart={cart} accent={config.accent} goBack={() => setScreen("home")} />}
+      {screen === "checkout" && <CheckoutScreen cart={cart} accent={config.accent} goBack={() => setScreen("home")} onConfirm={confirmOrder} />}
 
       {showBottomNav && <BottomNav screen={screen} setScreen={setScreen} accent={config.accent} cartCount={cartCount} />}
     </div>
