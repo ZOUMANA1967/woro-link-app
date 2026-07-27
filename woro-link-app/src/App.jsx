@@ -165,13 +165,28 @@ function matchesCategoryFilter(product, label) {
 // SITE_CONFIG — un objet par boutique. C'est ici qu'on branche le
 // white-labeling : couleur d'accent, nom, catégories, catalogue.
 // ---------------------------------------------------------------------------
+// Reordonne ODOO_CATEGORIES selon une liste de priorite propre a chaque
+// boutique (les categories prioritaires d'abord, le reste ensuite dans
+// l'ordre habituel) -- pour que chaque accueil mette en avant des rayons
+// differents, meme si le catalogue est le meme partout.
+function reorderCategories(priorityLabels) {
+  const priority = priorityLabels
+    .map((label) => ODOO_CATEGORIES.find((c) => c.label === label))
+    .filter(Boolean);
+  const rest = ODOO_CATEGORIES.filter((c) => !priorityLabels.includes(c.label));
+  return [...priority, ...rest];
+}
+
 const SITE_CONFIGS = {
   "z-reseaux": {
     name: "Z-RESEAUX",
     tagline: "Équipements réseaux & IT",
     accent: "#E30613",
     logo: LOGOS["z-reseaux"],
-    categories: ODOO_CATEGORIES,
+    categories: reorderCategories(["RESEAU, MATERIEL ACTIF", "RESEAU WIFI", "KVM, SWITCHS, SPLITTERS", "COFFRETS RESEAUX"]),
+    motifVariant: 1,
+    promoLabel: "Le choix des pros du réseau",
+    promoText: "Jusqu'à -20% sur le matériel actif",
     // Sélection issue de votre export Odoo réel (Produit__product_template_.xlsx)
     products: [
       { id: "1105007", ref: "1105007", name: "Netgear WNDAP660 Point d'accès 450Mbps Dual-band PoE", price: 550800 },
@@ -187,7 +202,10 @@ const SITE_CONFIGS = {
     tagline: "Réseaux & Communications",
     accent: "#97B822",
     logo: LOGOS["teeshopafrica"],
-    categories: ODOO_CATEGORIES,
+    categories: reorderCategories(["TELEPHONIE", "MULTIMEDIA ET SONORISATION", "PRODUITS USB", "ADAPTATEURS"]),
+    motifVariant: 2,
+    promoLabel: "Communiquez sans limite",
+    promoText: "Téléphonie & multimédia à prix doux",
     products: [
       { id: "p1", name: "Écouteurs sans fil Pro", price: 15000, old: 19000, badge: "-21%", rating: 4.3, reviewCount: 88, sold: "210 vendus" },
       { id: "p2", name: "Montre connectée Sport", price: 22000, old: null, badge: null, rating: 4.5, reviewCount: 33, sold: "70 vendus" },
@@ -200,7 +218,10 @@ const SITE_CONFIGS = {
     tagline: "Le coeur du réseau",
     accent: "#0066CC",
     logo: LOGOS["backbone-ivoire"],
-    categories: ODOO_CATEGORIES,
+    categories: reorderCategories(["BAIE", "RESEAU, MATERIEL CABLAGE", "FIBRE OPTIQUE", "OUTILLAGE ET MESURES"]),
+    motifVariant: 3,
+    promoLabel: "L'infrastructure qui tient la route",
+    promoText: "Baies, câblage & fibre optique pro",
     products: [
       { id: "p1", name: "Onduleur industriel 3kVA", price: 310000, old: 355000, badge: "-13%", rating: 4.7, reviewCount: 22, sold: "35 vendus" },
       { id: "p2", name: "Baie de brassage 42U", price: 185000, old: null, badge: null, rating: 4.5, reviewCount: 14, sold: "18 vendus" },
@@ -213,11 +234,24 @@ const SITE_CONFIGS = {
 // ---------------------------------------------------------------------------
 // Motif signature : "sentier réseau"
 // ---------------------------------------------------------------------------
-function NetworkTrail({ color }) {
+// Motif de l'en-tete, avec 3 variantes distinctes pour que les 3 boutiques
+// ne se ressemblent pas trait pour trait, tout en gardant le meme esprit
+// visuel ("sentier reseau").
+function NetworkTrail({ color, variant = 1 }) {
+  const paths = {
+    1: "M0 90 C 60 30, 120 130, 180 60 S 300 20, 400 70",
+    2: "M0 40 C 80 110, 140 10, 220 80 S 340 120, 400 40",
+    3: "M0 65 C 100 20, 160 120, 240 45 S 320 90, 400 55",
+  };
+  const dots = {
+    1: [20, 95, 180, 260, 340, 390],
+    2: [15, 90, 160, 230, 300, 380],
+    3: [30, 110, 190, 250, 320, 395],
+  };
   return (
     <svg className="absolute inset-0 w-full h-full opacity-[0.14] pointer-events-none" viewBox="0 0 400 140" preserveAspectRatio="none">
-      <path d="M0 90 C 60 30, 120 130, 180 60 S 300 20, 400 70" stroke={color} strokeWidth="1.5" strokeDasharray="1 9" strokeLinecap="round" fill="none" />
-      {[20, 95, 180, 260, 340, 390].map((x, i) => (
+      <path d={paths[variant] || paths[1]} stroke={color} strokeWidth="1.5" strokeDasharray="1 9" strokeLinecap="round" fill="none" />
+      {(dots[variant] || dots[1]).map((x, i) => (
         <circle key={i} cx={x} cy={i % 2 === 0 ? 55 : 85} r="3" fill={color} />
       ))}
     </svg>
@@ -328,7 +362,7 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
       )}
 
       <header className="relative overflow-hidden px-5 pt-5 pb-7" style={{ background: TOKENS.ink }}>
-        <NetworkTrail color={config.accent} />
+        <NetworkTrail color={config.accent} variant={config.motifVariant} />
         <div className="relative flex items-center justify-between mb-4">
           <div>
             <img src={config.logo} alt={config.name} className="h-9 object-contain" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }} />
@@ -344,8 +378,8 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
       <div className="px-5 -mt-3">
         <div className="relative overflow-hidden rounded-2xl px-4 py-4 flex items-center justify-between" style={{ background: config.accent }}>
           <div>
-            <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: `${TOKENS.paper}CC` }}>Offre du moment</p>
-            <p className="text-base font-semibold mt-0.5" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.paper }}>Jusqu'à -20% sur une sélection</p>
+            <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: `${TOKENS.paper}CC` }}>{config.promoLabel || "Offre du moment"}</p>
+            <p className="text-base font-semibold mt-0.5" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.paper }}>{config.promoText || "Jusqu'à -20% sur une sélection"}</p>
           </div>
           <Flame size={30} color={TOKENS.paper} opacity={0.85} />
         </div>
