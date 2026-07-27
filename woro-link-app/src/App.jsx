@@ -827,12 +827,48 @@ function CartScreen({ cart, updateQty, removeItem, accent, goToCheckout }) {
 // Écran : Compte
 // ---------------------------------------------------------------------------
 function AccountScreen({ accent }) {
-  const ORDER_STATUSES = [
-    { icon: CreditCard, label: "À payer", count: 1 },
-    { icon: Package, label: "À expédier", count: 0 },
-    { icon: Package, label: "En livraison", count: 2 },
-    { icon: ShieldCheck, label: "Livrées", count: 5 },
-  ];
+  const [name, setName] = useState(() => localStorage.getItem("woroCustomerName") || "");
+  const [phone, setPhone] = useState(() => localStorage.getItem("woroCustomerPhone") || "");
+  const [formName, setFormName] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [orders, setOrders] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const isSignedIn = Boolean(phone);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    let cancelled = false;
+    setLoading(true);
+    fetch(`${RELAY_URL}/api/my-orders?phone=${encodeURIComponent(phone)}`, {
+      headers: { "X-App-Key": APP_KEY },
+    })
+      .then((res) => res.json())
+      .then((data) => { if (!cancelled) setOrders(data.orders || []); })
+      .catch(() => { if (!cancelled) setOrders([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [phone, isSignedIn]);
+
+  const signIn = () => {
+    if (formPhone.trim() === "") return;
+    localStorage.setItem("woroCustomerName", formName.trim());
+    localStorage.setItem("woroCustomerPhone", formPhone.trim());
+    if (formEmail.trim() !== "") localStorage.setItem("woroCustomerEmail", formEmail.trim());
+    setName(formName.trim());
+    setPhone(formPhone.trim());
+  };
+
+  const signOut = () => {
+    localStorage.removeItem("woroCustomerName");
+    localStorage.removeItem("woroCustomerPhone");
+    localStorage.removeItem("woroCustomerEmail");
+    setName("");
+    setPhone("");
+    setOrders(null);
+  };
+
   const MENU = [
     { icon: MapPin, label: "Mes adresses" },
     { icon: CreditCard, label: "Moyens de paiement" },
@@ -840,6 +876,63 @@ function AccountScreen({ accent }) {
     { icon: Headphones, label: "Aide & support" },
     { icon: Settings, label: "Paramètres" },
   ];
+
+  if (!isSignedIn) {
+    return (
+      <div className="pb-24">
+        <div className="relative px-5 pt-5 pb-8" style={{ background: TOKENS.ink }}>
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: `${TOKENS.paper}15`, border: `1.5px solid ${TOKENS.paper}30` }}>
+              <User size={24} color={TOKENS.paper} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.paper }}>Mon compte</p>
+              <p className="text-[11px]" style={{ color: `${TOKENS.paper}88` }}>Retrouvez vos commandes</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 -mt-4">
+          <div className="rounded-xl bg-white p-4 space-y-2.5" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+            <p className="text-xs font-semibold mb-1" style={{ color: TOKENS.ink }}>Identifiez-vous</p>
+            <p className="text-[11px] mb-2" style={{ color: `${TOKENS.ink}77` }}>Entrez le nom et le numéro utilisés lors de votre commande pour retrouver votre historique.</p>
+            <input
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="Nom complet"
+              className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
+              style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+            />
+            <input
+              value={formPhone}
+              onChange={(e) => setFormPhone(e.target.value)}
+              placeholder="Numéro de téléphone"
+              type="tel"
+              className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
+              style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+            />
+            <input
+              value={formEmail}
+              onChange={(e) => setFormEmail(e.target.value)}
+              placeholder="Adresse email (facultatif)"
+              type="email"
+              className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
+              style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+            />
+            <button
+              onClick={signIn}
+              disabled={formPhone.trim() === ""}
+              className="w-full rounded-xl py-2.5 text-xs font-semibold disabled:opacity-50"
+              style={{ background: accent, color: TOKENS.paper }}
+            >
+              Voir mes commandes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-24">
       <div className="relative px-5 pt-5 pb-8" style={{ background: TOKENS.ink }}>
@@ -848,8 +941,8 @@ function AccountScreen({ accent }) {
             <User size={24} color={TOKENS.paper} />
           </div>
           <div>
-            <p className="text-sm font-semibold" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.paper }}>Zoumana B.</p>
-            <p className="text-[11px]" style={{ color: `${TOKENS.paper}88` }}>Abidjan, Côte d'Ivoire</p>
+            <p className="text-sm font-semibold" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.paper }}>{name || "Client"}</p>
+            <p className="text-[11px]" style={{ color: `${TOKENS.paper}88` }}>{phone}</p>
           </div>
         </div>
       </div>
@@ -857,17 +950,28 @@ function AccountScreen({ accent }) {
       <div className="px-5 -mt-4">
         <div className="rounded-xl bg-white p-4" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
           <h2 className="text-xs font-semibold mb-3" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>Mes commandes</h2>
-          <div className="grid grid-cols-4 gap-1">
-            {ORDER_STATUSES.map(({ icon: Icon, label, count }, i) => (
-              <button key={i} className="flex flex-col items-center gap-1.5 relative">
-                <div className="relative">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: `${accent}12` }}><Icon size={16} color={accent} /></div>
-                  {count > 0 && <span className="absolute -top-1 -right-1 text-[8px] font-semibold w-4 h-4 rounded-full flex items-center justify-center" style={{ background: TOKENS.clay, color: TOKENS.paper }}>{count}</span>}
+          {loading && <p className="text-[11px]" style={{ color: `${TOKENS.ink}66` }}>Chargement…</p>}
+          {!loading && orders && orders.length === 0 && (
+            <p className="text-[11px]" style={{ color: `${TOKENS.ink}66` }}>Aucune commande pour l'instant.</p>
+          )}
+          {!loading && orders && orders.length > 0 && (
+            <div className="space-y-2">
+              {orders.map((o) => (
+                <div key={o.id} className="rounded-lg p-2.5" style={{ background: TOKENS.sand + "60" }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold" style={{ color: TOKENS.ink }}>Commande #{o.id}</span>
+                    <span className="text-[10px]" style={{ color: o.odooOk ? TOKENS.leaf : TOKENS.clay }}>
+                      {o.odooOk ? "✓ Enregistrée" : "En attente"}
+                    </span>
+                  </div>
+                  <p className="text-[10px] mt-0.5" style={{ color: `${TOKENS.ink}77` }}>
+                    {o.items.length} article{o.items.length > 1 ? "s" : ""} · {new Date(o.createdAt).toLocaleDateString("fr-FR")}
+                  </p>
+                  <p className="text-xs font-semibold mt-1" style={{ fontFamily: TOKENS.displayFont, color: accent }}>{formatF(o.total)} F</p>
                 </div>
-                <span className="text-[9.5px] text-center leading-tight" style={{ color: `${TOKENS.ink}99` }}>{label}</span>
-              </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -884,7 +988,7 @@ function AccountScreen({ accent }) {
       </div>
 
       <div className="px-5 mt-4">
-        <button className="w-full flex items-center justify-center gap-2 rounded-xl py-3" style={{ border: `1px solid ${TOKENS.ink}22` }}>
+        <button onClick={signOut} className="w-full flex items-center justify-center gap-2 rounded-xl py-3" style={{ border: `1px solid ${TOKENS.ink}22` }}>
           <LogOut size={14} color={`${TOKENS.ink}99`} /><span className="text-xs font-medium" style={{ color: `${TOKENS.ink}99` }}>Se déconnecter</span>
         </button>
       </div>
@@ -898,8 +1002,9 @@ function AccountScreen({ accent }) {
 function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
   const [payment, setPayment] = useState("om");
   const [submitting, setSubmitting] = useState(false);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState(() => localStorage.getItem("woroCustomerName") || "");
+  const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem("woroCustomerPhone") || "");
+  const [customerEmail, setCustomerEmail] = useState(() => localStorage.getItem("woroCustomerEmail") || "");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const items = Object.values(cart);
   const PAYMENT_METHODS = [
@@ -933,6 +1038,14 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
             onChange={(e) => setCustomerPhone(e.target.value)}
             placeholder="Numéro de téléphone"
             type="tel"
+            className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
+            style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
+          />
+          <input
+            value={customerEmail}
+            onChange={(e) => setCustomerEmail(e.target.value)}
+            placeholder="Adresse email (facultatif)"
+            type="email"
             className="w-full text-xs rounded-lg px-3 py-2.5 outline-none"
             style={{ border: `1px solid ${TOKENS.ink}22`, color: TOKENS.ink }}
           />
@@ -1001,7 +1114,7 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
           disabled={submitting || !canConfirm}
           onClick={async () => {
             setSubmitting(true);
-            await onConfirm({ customerName, customerPhone, deliveryAddress });
+            await onConfirm({ customerName, customerPhone, customerEmail, deliveryAddress });
             setSubmitting(false);
           }}
         >
@@ -1133,15 +1246,22 @@ export default function App() {
 
   // Envoie la commande au relais : elle apparait dans le panneau
   // d'administration ET declenche la creation d'un vrai devis dans Odoo.
-  const confirmOrder = async ({ customerName, customerPhone, deliveryAddress } = {}) => {
+  const confirmOrder = async ({ customerName, customerPhone, customerEmail, deliveryAddress } = {}) => {
     const items = Object.values(cart);
     const total = items.reduce((s, it) => s + it.price * it.qty, 0) + 2000;
     try {
       await fetch(`${RELAY_URL}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
-        body: JSON.stringify({ siteKey, items, total, customerName, customerPhone, deliveryAddress }),
+        body: JSON.stringify({ siteKey, items, total, customerName, customerPhone, customerEmail, deliveryAddress }),
       });
+      // Retient l'identite du client pour que "Mon compte" le reconnaisse
+      // automatiquement la prochaine fois, sans avoir a se re-identifier.
+      if (customerPhone) {
+        localStorage.setItem("woroCustomerName", customerName || "");
+        localStorage.setItem("woroCustomerPhone", customerPhone);
+        if (customerEmail) localStorage.setItem("woroCustomerEmail", customerEmail);
+      }
     } catch (err) {
       console.warn("Envoi de la commande impossible pour le moment:", err.message);
       // On continue quand meme -- le client ne doit pas rester bloque
