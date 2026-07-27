@@ -959,13 +959,13 @@ function AccountScreen({ accent }) {
               {orders.map((o) => (
                 <div key={o.id} className="rounded-lg p-2.5" style={{ background: TOKENS.sand + "60" }}>
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold" style={{ color: TOKENS.ink }}>Commande #{o.id}</span>
+                    <span className="text-[11px] font-semibold" style={{ color: TOKENS.ink }}>{o.reference || `Commande #${o.id}`}</span>
                     <span className="text-[10px]" style={{ color: o.odooOk ? TOKENS.leaf : TOKENS.clay }}>
                       {o.odooOk ? "✓ Enregistrée" : "En attente"}
                     </span>
                   </div>
                   <p className="text-[10px] mt-0.5" style={{ color: `${TOKENS.ink}77` }}>
-                    {o.items.length} article{o.items.length > 1 ? "s" : ""} · {new Date(o.createdAt).toLocaleDateString("fr-FR")}
+                    {o.items ? `${o.items.length} article${o.items.length > 1 ? "s" : ""} · ` : ""}{new Date(o.createdAt).toLocaleDateString("fr-FR")}
                   </p>
                   <p className="text-xs font-semibold mt-1" style={{ fontFamily: TOKENS.displayFont, color: accent }}>{formatF(o.total)} F</p>
                 </div>
