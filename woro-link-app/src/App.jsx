@@ -185,8 +185,8 @@ const SITE_CONFIGS = {
     logo: LOGOS["z-reseaux"],
     categories: reorderCategories(["RESEAU, MATERIEL ACTIF", "RESEAU WIFI", "KVM, SWITCHS, SPLITTERS", "COFFRETS RESEAUX"]),
     motifVariant: 1,
-    promoLabel: "Le choix des pros du réseau",
-    promoText: "Jusqu'à -20% sur le matériel actif",
+    promoLabel: "Notre engagement",
+    promoText: "Cent pour cent Réseaux",
     // Sélection issue de votre export Odoo réel (Produit__product_template_.xlsx)
     products: [
       { id: "1105007", ref: "1105007", name: "Netgear WNDAP660 Point d'accès 450Mbps Dual-band PoE", price: 550800 },
@@ -204,8 +204,8 @@ const SITE_CONFIGS = {
     logo: LOGOS["teeshopafrica"],
     categories: reorderCategories(["TELEPHONIE", "MULTIMEDIA ET SONORISATION", "PRODUITS USB", "ADAPTATEURS"]),
     motifVariant: 2,
-    promoLabel: "Communiquez sans limite",
-    promoText: "Téléphonie & multimédia à prix doux",
+    promoLabel: "Notre promesse",
+    promoText: "La communication sans frontières",
     products: [
       { id: "p1", name: "Écouteurs sans fil Pro", price: 15000, old: 19000, badge: "-21%", rating: 4.3, reviewCount: 88, sold: "210 vendus" },
       { id: "p2", name: "Montre connectée Sport", price: 22000, old: null, badge: null, rating: 4.5, reviewCount: 33, sold: "70 vendus" },
@@ -220,8 +220,8 @@ const SITE_CONFIGS = {
     logo: LOGOS["backbone-ivoire"],
     categories: reorderCategories(["BAIE", "RESEAU, MATERIEL CABLAGE", "FIBRE OPTIQUE", "OUTILLAGE ET MESURES"]),
     motifVariant: 3,
-    promoLabel: "L'infrastructure qui tient la route",
-    promoText: "Baies, câblage & fibre optique pro",
+    promoLabel: "Notre expertise",
+    promoText: "Le coeur du réseau informatique",
     products: [
       { id: "p1", name: "Onduleur industriel 3kVA", price: 310000, old: 355000, badge: "-13%", rating: 4.7, reviewCount: 22, sold: "35 vendus" },
       { id: "p2", name: "Baie de brassage 42U", price: 185000, old: null, badge: null, rating: 4.5, reviewCount: 14, sold: "18 vendus" },
