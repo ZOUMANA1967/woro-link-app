@@ -276,6 +276,23 @@ function ProductImage({ src, iconSize = 22 }) {
   );
 }
 
+// Affiche la vraie photo d'une categorie (venue d'Odoo) si elle existe.
+// Sinon, retombe sur la petite icone habituelle de la categorie.
+function CategoryImage({ src, icon: Icon, iconSize = 18, iconColor }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return <Icon size={iconSize} color={iconColor} />;
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      className="w-full h-full object-cover rounded-full"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function StarRow({ rating, size = 12 }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -339,7 +356,7 @@ function TopBar({ title, accent, onBack, right }) {
 // ---------------------------------------------------------------------------
 // Écran : Accueil
 // ---------------------------------------------------------------------------
-function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading, onOpenSearch, onSeeAllCategories }) {
+function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading, onOpenSearch, onSeeAllCategories, categoryImages }) {
   return (
     <div className="pb-24">
       {!isOnRealStoreDomain() && (
@@ -395,8 +412,8 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
         <div className="grid grid-cols-3 gap-3">
           {config.categories.slice(0, 6).map(({ icon: Icon, label }, i) => (
             <button key={i} onClick={onSeeAllCategories} className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: `${config.accent}1A` }}>
-                <Icon size={18} color={config.accent} />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" style={{ background: `${config.accent}1A` }}>
+                <CategoryImage src={categoryImages?.[label]} icon={Icon} iconSize={18} iconColor={config.accent} />
               </div>
               <span className="text-[10px] font-medium leading-tight text-center line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
             </button>
@@ -516,7 +533,7 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
 // ---------------------------------------------------------------------------
 // Écran : Catégories détaillées
 // ---------------------------------------------------------------------------
-function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allProducts, allProductsLoading }) {
+function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allProducts, allProductsLoading, categoryImages }) {
   const [active, setActive] = useState(0);
   const current = config.categories[active];
 
@@ -549,8 +566,8 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
             return (
               <button key={label} onClick={() => setActive(i)} className="w-full flex flex-col items-center gap-1.5 py-3.5 relative" style={{ background: isActive ? TOKENS.paper : "white" }}>
                 {isActive && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: accent }} />}
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: isActive ? `${accent}1A` : `${TOKENS.ink}0A` }}>
-                  <Icon size={15} color={isActive ? accent : `${TOKENS.ink}88`} />
+                <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden" style={{ background: isActive ? `${accent}1A` : `${TOKENS.ink}0A` }}>
+                  <CategoryImage src={categoryImages?.[label]} icon={Icon} iconSize={15} iconColor={isActive ? accent : `${TOKENS.ink}88`} />
                 </div>
                 <span className="text-[9.5px] text-center leading-tight px-1 line-clamp-3" style={{ color: isActive ? TOKENS.ink : `${TOKENS.ink}77`, fontWeight: isActive ? 600 : 400 }}>{label}</span>
               </button>
@@ -1187,6 +1204,15 @@ export default function App() {
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(null);
   const [selectedSubcategoryLabel, setSelectedSubcategoryLabel] = useState(null);
 
+  // Images des grandes categories (une seule fois au demarrage).
+  const [categoryImages, setCategoryImages] = useState({});
+  useEffect(() => {
+    fetch(`${RELAY_URL}/api/categories`)
+      .then((res) => res.json())
+      .then((data) => setCategoryImages(data.categoryImages || {}))
+      .catch(() => {}); // pas grave -- les icones de secours restent affichees
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setAllProductsLoading(true);
@@ -1284,9 +1310,9 @@ export default function App() {
       {screen === "productList" && <TopBar title={selectedSubcategoryLabel ? `${selectedCategoryLabel} · ${selectedSubcategoryLabel}` : (selectedCategoryLabel || "Produits")} onBack={() => setScreen("categories")} />}
       {screen === "search" && <TopBar title="Recherche" onBack={() => setScreen("home")} />}
 
-      {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} onSeeAllCategories={() => setScreen("categories")} />}
+      {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} onSeeAllCategories={() => setScreen("categories")} categoryImages={categoryImages} />}
       {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
-      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} />}
+      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} categoryImages={categoryImages} />}
       {screen === "productList" && (
         <ProductListScreen
           title={selectedCategoryLabel}
