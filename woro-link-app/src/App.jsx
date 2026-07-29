@@ -80,6 +80,16 @@ function normalize(str) {
     .toUpperCase();
 }
 
+// Cherche une image dans un dictionnaire {nom: url} sans se soucier des
+// accents/majuscules -- les noms tapes dans Odoo ne correspondent pas
+// toujours caractere pour caractere a ceux codes dans l'app.
+function findImage(imagesMap, label) {
+  if (!imagesMap || !label) return null;
+  const needle = normalize(label);
+  const key = Object.keys(imagesMap).find((k) => normalize(k) === needle);
+  return key ? imagesMap[key] : null;
+}
+
 // Pour chaque catégorie de l'app, quels mots-clés chercher dans le vrai
 // catalogue Odoo (soit dans la catégorie produit, soit dans le nom du produit).
 // Les 21 vraies catégories du catalogue Odoo, dans le même ordre que sur
@@ -413,7 +423,7 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
           {config.categories.slice(0, 6).map(({ icon: Icon, label }, i) => (
             <button key={i} onClick={onSeeAllCategories} className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" style={{ background: `${config.accent}1A` }}>
-                <CategoryImage src={categoryImages?.[label]} icon={Icon} iconSize={18} iconColor={config.accent} />
+                <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={18} iconColor={config.accent} />
               </div>
               <span className="text-[10px] font-medium leading-tight text-center line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
             </button>
@@ -533,7 +543,7 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
 // ---------------------------------------------------------------------------
 // Écran : Catégories détaillées
 // ---------------------------------------------------------------------------
-function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allProducts, allProductsLoading, categoryImages }) {
+function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allProducts, allProductsLoading, categoryImages, subcategoryImages }) {
   const [active, setActive] = useState(0);
   const current = config.categories[active];
 
@@ -567,7 +577,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
               <button key={label} onClick={() => setActive(i)} className="w-full flex flex-col items-center gap-1.5 py-3.5 relative" style={{ background: isActive ? TOKENS.paper : "white" }}>
                 {isActive && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: accent }} />}
                 <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden" style={{ background: isActive ? `${accent}1A` : `${TOKENS.ink}0A` }}>
-                  <CategoryImage src={categoryImages?.[label]} icon={Icon} iconSize={15} iconColor={isActive ? accent : `${TOKENS.ink}88`} />
+                  <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={15} iconColor={isActive ? accent : `${TOKENS.ink}88`} />
                 </div>
                 <span className="text-[9.5px] text-center leading-tight px-1 line-clamp-3" style={{ color: isActive ? TOKENS.ink : `${TOKENS.ink}77`, fontWeight: isActive ? 600 : 400 }}>{label}</span>
               </button>
@@ -600,8 +610,8 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
                   className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white text-center"
                   style={{ border: `1px solid ${TOKENS.ink}0F` }}
                 >
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: TOKENS.sand }}>
-                    <Monitor size={18} color={`${TOKENS.ink}33`} />
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: TOKENS.sand }}>
+                    <ProductImage src={findImage(subcategoryImages, label)} iconSize={18} />
                   </div>
                   <span className="text-[10.5px] leading-tight line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
                   <span className="text-[9px]" style={{ color: `${TOKENS.ink}55` }}>{count} produit{count > 1 ? "s" : ""}</span>
@@ -1204,12 +1214,16 @@ export default function App() {
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState(null);
   const [selectedSubcategoryLabel, setSelectedSubcategoryLabel] = useState(null);
 
-  // Images des grandes categories (une seule fois au demarrage).
+  // Images des grandes categories et des sous-categories (une seule fois au demarrage).
   const [categoryImages, setCategoryImages] = useState({});
+  const [subcategoryImages, setSubcategoryImages] = useState({});
   useEffect(() => {
     fetch(`${RELAY_URL}/api/categories`)
       .then((res) => res.json())
-      .then((data) => setCategoryImages(data.categoryImages || {}))
+      .then((data) => {
+        setCategoryImages(data.categoryImages || {});
+        setSubcategoryImages(data.subcategoryImages || {});
+      })
       .catch(() => {}); // pas grave -- les icones de secours restent affichees
   }, []);
 
@@ -1312,7 +1326,7 @@ export default function App() {
 
       {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} onSeeAllCategories={() => setScreen("categories")} categoryImages={categoryImages} />}
       {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
-      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} categoryImages={categoryImages} />}
+      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} categoryImages={categoryImages} subcategoryImages={subcategoryImages} />}
       {screen === "productList" && (
         <ProductListScreen
           title={selectedCategoryLabel}
