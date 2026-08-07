@@ -571,11 +571,21 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
     return allProducts.filter((p) => matchesCategoryFilter(p, current.label));
   }, [allProducts, current.label]);
 
-  // Liste officielle des sous-categories (verifiee sur www.z-reseaux.com),
-  // avec le nombre reel de produits en direct dans chacune.
+  // Liste officielle des sous-categories (verifiee sur www.z-reseaux.com) si
+  // elle existe ; sinon, on les deduit automatiquement des vraies donnees
+  // Odoo (utile pour les categories ajoutees depuis, comme les rayons
+  // electriques, dont on n'a pas encore la liste officielle).
   const subcategories = useMemo(() => {
-    const officialList = ODOO_SUBCATEGORIES[current.label] || [];
-    return officialList.map((label) => [label, countInSubcategory(currentCategoryProducts, label)]);
+    const officialList = ODOO_SUBCATEGORIES[current.label];
+    if (officialList) {
+      return officialList.map((label) => [label, countInSubcategory(currentCategoryProducts, label)]);
+    }
+    const counts = {};
+    for (const p of currentCategoryProducts) {
+      const sub = getSubcategoryLabel(p);
+      counts[sub] = (counts[sub] || 0) + 1;
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
   }, [currentCategoryProducts, current.label]);
 
   return (
