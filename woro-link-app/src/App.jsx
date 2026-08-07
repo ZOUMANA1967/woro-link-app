@@ -313,9 +313,10 @@ function ProductImage({ src, iconSize = 22 }) {
   }
   return (
     <img
+      key={src}
       src={src}
       alt=""
-      className="w-full h-full object-contain"
+      className="w-full h-full object-contain img-fade-in"
       onError={() => setFailed(true)}
     />
   );
@@ -330,9 +331,10 @@ function CategoryImage({ src, icon: Icon, iconSize = 18, iconColor }) {
   }
   return (
     <img
+      key={src}
       src={src}
       alt=""
-      className="w-full h-full object-cover rounded-full"
+      className="w-full h-full object-cover rounded-full img-fade-in"
       onError={() => setFailed(true)}
     />
   );
@@ -366,7 +368,7 @@ function BottomNav({ screen, setScreen, accent, cartCount }) {
       {items.map(({ key, icon: Icon, label, badge }) => {
         const active = screen === key;
         return (
-          <button key={key} className="flex flex-col items-center gap-0.5 relative" onClick={() => setScreen(key)}>
+          <button key={key} className="flex flex-col items-center gap-0.5 relative tap" onClick={() => setScreen(key)}>
             <div className="relative">
               <Icon size={19} color={active ? accent : `${TOKENS.ink}66`} />
               {badge > 0 && (
@@ -456,7 +458,7 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
         </div>
         <div className="grid grid-cols-3 gap-3">
           {config.categories.slice(0, 6).map(({ icon: Icon, label }, i) => (
-            <button key={i} onClick={onSeeAllCategories} className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+            <button key={i} onClick={onSeeAllCategories} className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 bg-white tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" style={{ background: `${config.accent}1A` }}>
                 <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={18} iconColor={config.accent} />
               </div>
@@ -473,7 +475,7 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
         </div>
         <div className="flex gap-3 overflow-x-auto px-5 pb-1">
           {config.products.map((p) => (
-            <button key={p.id} onClick={() => openProduct(p)} className="flex-shrink-0 w-36 rounded-xl bg-white overflow-hidden text-left" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+            <button key={p.id} onClick={() => openProduct(p)} className="flex-shrink-0 w-36 rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
                 {p.badge && (
                   <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: p.badge.startsWith("-") ? TOKENS.clay : TOKENS.leaf, color: TOKENS.paper }}>
@@ -564,10 +566,10 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white flex items-center gap-3 px-4 py-3" style={{ borderTop: `1px solid ${TOKENS.ink}0F` }}>
-        <button className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ border: `1.5px solid ${accent}`, color: accent }} onClick={() => addToCart(product, qty)}>
+        <button className="flex-1 rounded-xl py-3 text-sm font-semibold tap" style={{ border: `1.5px solid ${accent}`, color: accent }} onClick={() => addToCart(product, qty)}>
           Ajouter au panier
         </button>
-        <button className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ background: accent, color: TOKENS.paper }} onClick={() => { addToCart(product, qty); }}>
+        <button className="flex-1 rounded-xl py-3 text-sm font-semibold tap" style={{ background: accent, color: TOKENS.paper }} onClick={() => { addToCart(product, qty); }}>
           Acheter maintenant
         </button>
       </div>
@@ -619,7 +621,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
           {config.categories.map(({ icon: Icon, label }, i) => {
             const isActive = i === active;
             return (
-              <button key={label} onClick={() => setActive(i)} className="w-full flex flex-col items-center gap-1.5 py-3.5 relative" style={{ background: isActive ? TOKENS.paper : "white" }}>
+              <button key={label} onClick={() => setActive(i)} className="w-full flex flex-col items-center gap-1.5 py-3.5 relative tap" style={{ background: isActive ? TOKENS.paper : "white" }}>
                 {isActive && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: accent }} />}
                 <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden" style={{ background: isActive ? `${accent}1A` : `${TOKENS.ink}0A` }}>
                   <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={15} iconColor={isActive ? accent : `${TOKENS.ink}88`} />
@@ -643,7 +645,15 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
           </button>
 
           {allProductsLoading && (
-            <p className="text-xs text-center py-6" style={{ color: `${TOKENS.ink}55` }}>Chargement des sous-catégories…</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+                  <div className="w-12 h-12 rounded-lg skeleton" />
+                  <div className="w-16 h-2.5 rounded skeleton" />
+                  <div className="w-10 h-2 rounded skeleton" />
+                </div>
+              ))}
+            </div>
           )}
 
           {!allProductsLoading && (
@@ -652,7 +662,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
                 <button
                   key={label}
                   onClick={() => onBrowseCategory(current.label, label)}
-                  className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white text-center"
+                  className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white text-center tap"
                   style={{ border: `1px solid ${TOKENS.ink}0F` }}
                 >
                   <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: TOKENS.sand }}>
@@ -676,7 +686,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
 // ---------------------------------------------------------------------------
 // Écran : liste de produits d'une catégorie (vrai catalogue, avec pagination)
 // ---------------------------------------------------------------------------
-function ProductListScreen({ title, products, accent, openProduct, isSubcategory, parentCategoryLabel, onBrowseParentCategory, subcategoryLabel }) {
+function ProductListScreen({ title, products, accent, openProduct, isSubcategory, parentCategoryLabel, onBrowseParentCategory, subcategoryLabel, loading }) {
   const [visibleCount, setVisibleCount] = useState(20);
   const [refineGroup, setRefineGroup] = useState(null);
 
@@ -726,10 +736,24 @@ function ProductListScreen({ title, products, accent, openProduct, isSubcategory
           ))}
         </div>
       )}
-      <p className="text-xs mb-3" style={{ color: `${TOKENS.ink}66` }}>
-        {displayedProducts.length} produit{displayedProducts.length > 1 ? "s" : ""} trouvé{displayedProducts.length > 1 ? "s" : ""}
-      </p>
-      {displayedProducts.length === 0 ? (
+      {!loading && (
+        <p className="text-xs mb-3" style={{ color: `${TOKENS.ink}66` }}>
+          {displayedProducts.length} produit{displayedProducts.length > 1 ? "s" : ""} trouvé{displayedProducts.length > 1 ? "s" : ""}
+        </p>
+      )}
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="rounded-xl bg-white overflow-hidden" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+              <div className="h-24 skeleton" />
+              <div className="p-2.5 space-y-1.5">
+                <div className="w-full h-2.5 rounded skeleton" />
+                <div className="w-2/3 h-2.5 rounded skeleton" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : displayedProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center gap-3 px-4">
           <Search size={32} color={`${TOKENS.ink}33`} />
           {isSubcategory ? (
@@ -753,7 +777,7 @@ function ProductListScreen({ title, products, accent, openProduct, isSubcategory
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {visible.map((p) => (
-            <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+            <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
                 <ProductImage src={p.image} iconSize={22} />
               </div>
@@ -769,7 +793,7 @@ function ProductListScreen({ title, products, accent, openProduct, isSubcategory
       {visibleCount < displayedProducts.length && (
         <button
           onClick={() => setVisibleCount((v) => v + 20)}
-          className="w-full mt-4 rounded-xl py-3 text-sm font-semibold"
+          className="w-full mt-4 rounded-xl py-3 text-sm font-semibold tap"
           style={{ border: `1.5px solid ${accent}`, color: accent }}
         >
           Charger plus ({displayedProducts.length - visibleCount} restants)
@@ -817,7 +841,7 @@ function SearchScreen({ allProducts, accent, openProduct, loading }) {
           <p className="text-xs mb-3" style={{ color: `${TOKENS.ink}66` }}>{results.length} résultat{results.length > 1 ? "s" : ""}</p>
           <div className="grid grid-cols-2 gap-3">
             {results.slice(0, 40).map((p) => (
-              <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
+              <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
                 <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
                   <ProductImage src={p.image} iconSize={22} />
                 </div>
@@ -886,7 +910,7 @@ function CartScreen({ cart, updateQty, removeItem, accent, goToCheckout }) {
             <p className="text-[10px]" style={{ color: `${TOKENS.ink}66` }}>Total</p>
             <p className="text-base font-semibold" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>{formatF(total)} F</p>
           </div>
-          <button className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ background: accent, color: TOKENS.paper }} onClick={goToCheckout}>
+          <button className="flex-1 rounded-xl py-3 text-sm font-semibold tap" style={{ background: accent, color: TOKENS.paper }} onClick={goToCheckout}>
             Commander ({items.length})
           </button>
         </div>
@@ -1022,7 +1046,17 @@ function AccountScreen({ accent }) {
       <div className="px-5 -mt-4">
         <div className="rounded-xl bg-white p-4" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
           <h2 className="text-xs font-semibold mb-3" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.ink }}>Mes commandes</h2>
-          {loading && <p className="text-[11px]" style={{ color: `${TOKENS.ink}66` }}>Chargement…</p>}
+          {loading && (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="rounded-lg p-2.5" style={{ background: TOKENS.sand + "60" }}>
+                  <div className="w-20 h-2.5 rounded skeleton mb-2" />
+                  <div className="w-28 h-2 rounded skeleton mb-1.5" />
+                  <div className="w-16 h-2.5 rounded skeleton" />
+                </div>
+              ))}
+            </div>
+          )}
           {!loading && orders && orders.length === 0 && (
             <p className="text-[11px]" style={{ color: `${TOKENS.ink}66` }}>Aucune commande pour l'instant.</p>
           )}
@@ -1362,32 +1396,35 @@ export default function App() {
     <div className="w-full max-w-md mx-auto min-h-screen relative" style={{ background: TOKENS.paper, fontFamily: TOKENS.bodyFont }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
 
-      {screen === "categories" && <TopBar title="Catégories" onBack={() => setScreen("home")} />}
-      {screen === "cart" && <TopBar title="Mon panier" onBack={() => setScreen("home")} />}
-      {screen === "account" && null /* AccountScreen gère son propre header */}
-      {screen === "checkout" && <TopBar title="Validation de commande" onBack={() => setScreen("cart")} />}
-      {screen === "productList" && <TopBar title={selectedSubcategoryLabel ? `${selectedCategoryLabel} · ${selectedSubcategoryLabel}` : (selectedCategoryLabel || "Produits")} onBack={() => setScreen("categories")} />}
-      {screen === "search" && <TopBar title="Recherche" onBack={() => setScreen("home")} />}
+      <div key={screen} className="screen-enter">
+        {screen === "categories" && <TopBar title="Catégories" onBack={() => setScreen("home")} />}
+        {screen === "cart" && <TopBar title="Mon panier" onBack={() => setScreen("home")} />}
+        {screen === "account" && null /* AccountScreen gère son propre header */}
+        {screen === "checkout" && <TopBar title="Validation de commande" onBack={() => setScreen("cart")} />}
+        {screen === "productList" && <TopBar title={selectedSubcategoryLabel ? `${selectedCategoryLabel} · ${selectedSubcategoryLabel}` : (selectedCategoryLabel || "Produits")} onBack={() => setScreen("categories")} />}
+        {screen === "search" && <TopBar title="Recherche" onBack={() => setScreen("home")} />}
 
-      {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} onSeeAllCategories={() => setScreen("categories")} categoryImages={categoryImages} />}
-      {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
-      {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} categoryImages={categoryImages} subcategoryImages={subcategoryImages} />}
-      {screen === "productList" && (
-        <ProductListScreen
-          title={selectedCategoryLabel}
-          products={categoryProducts}
-          accent={config.accent}
-          openProduct={openProduct}
-          isSubcategory={Boolean(selectedSubcategoryLabel)}
-          parentCategoryLabel={selectedCategoryLabel}
-          onBrowseParentCategory={() => setSelectedSubcategoryLabel(null)}
-          subcategoryLabel={selectedSubcategoryLabel}
-        />
-      )}
-      {screen === "search" && <SearchScreen allProducts={allProducts} accent={config.accent} openProduct={openProduct} loading={allProductsLoading} />}
-      {screen === "cart" && <CartScreen cart={cart} updateQty={updateQty} removeItem={removeItem} accent={config.accent} goToCheckout={() => setScreen("checkout")} />}
-      {screen === "account" && <AccountScreen accent={config.accent} />}
-      {screen === "checkout" && <CheckoutScreen cart={cart} accent={config.accent} goBack={() => setScreen("home")} onConfirm={confirmOrder} />}
+        {screen === "home" && <HomeScreen config={config} siteKey={siteKey} setSiteKey={setSiteKey} openProduct={openProduct} productsLoading={productsLoading} onOpenSearch={() => setScreen("search")} onSeeAllCategories={() => setScreen("categories")} categoryImages={categoryImages} />}
+        {screen === "product" && <ProductDetailScreen product={selectedProduct} accent={config.accent} addToCart={addToCart} goBack={() => setScreen("home")} />}
+        {screen === "categories" && <CategoriesScreen config={config} accent={config.accent} onBrowseCategory={openCategoryProducts} onOpenSearch={() => setScreen("search")} allProducts={allProducts} allProductsLoading={allProductsLoading} categoryImages={categoryImages} subcategoryImages={subcategoryImages} />}
+        {screen === "productList" && (
+          <ProductListScreen
+            title={selectedCategoryLabel}
+            products={categoryProducts}
+            accent={config.accent}
+            openProduct={openProduct}
+            isSubcategory={Boolean(selectedSubcategoryLabel)}
+            parentCategoryLabel={selectedCategoryLabel}
+            onBrowseParentCategory={() => setSelectedSubcategoryLabel(null)}
+            subcategoryLabel={selectedSubcategoryLabel}
+            loading={allProductsLoading}
+          />
+        )}
+        {screen === "search" && <SearchScreen allProducts={allProducts} accent={config.accent} openProduct={openProduct} loading={allProductsLoading} />}
+        {screen === "cart" && <CartScreen cart={cart} updateQty={updateQty} removeItem={removeItem} accent={config.accent} goToCheckout={() => setScreen("checkout")} />}
+        {screen === "account" && <AccountScreen accent={config.accent} />}
+        {screen === "checkout" && <CheckoutScreen cart={cart} accent={config.accent} goBack={() => setScreen("home")} onConfirm={confirmOrder} />}
+      </div>
 
       {showBottomNav && <BottomNav screen={screen} setScreen={setScreen} accent={config.accent} cartCount={cartCount} />}
     </div>
