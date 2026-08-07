@@ -149,7 +149,25 @@ const ODOO_SUBCATEGORIES = {
   "RESEAU WIFI": ["Cles USB wifi", "Cartes wifi", "Antennes USB wifi", "Points d'accès wifi", "Répéteurs wifi", "Modems wifi", "Routeurs wifi", "Modems et routeurs 3 et 4G", "Modems et routeurs 3G", "Hotspots et bornes wifi", "Plafonnier wifi", "Controleurs wifi", "Antennes intérieures wifi", "Antennes extérieures wifi", "Cordons & accessoires antennes wifi"],
   "TELEPHONIE": ["Adaptateurs, Repartiteurs, Doubleurs", "Fiches, Prises, Boitiers, Conjoncteurs Et Coupleurs", "Casques Filaires", "Casque Sans Fil", "Casques Et Oreillettes Bluetooth", "Cordons Et Accessoires Casques", "Talkies-walkies", "Teleconference", "Telephonie Filaire", "Telephonie Sans Fil", "Telephonie Voip", "Autocom Ip", "Visioconference"],
   "ADAPTATEURS": ["Alimentation", "Bluetooth", "Displayport", "Fibre Optique", "Hdmi", "Jack", "Ps/2", "Rj45 Ethernet", "Smartphone", "Telephone", "Usb", "Vga", "Wifi"],
+  // Arborescence dediee a Groupe WORO-LINK (specialiste materiel electrique),
+  // fournie par l'utilisateur -- distincte des 21+2 categories reseau/IT
+  // utilisees par les 3 autres boutiques.
+  "Matériel Electrique": ["Câbles et fils Electriques", "Tableaux et Coffret Electrique", "Appareillages Modulaire", "Appareillages Mural", "Accessoires d'Installation", "Conduites et Canalisations"],
+  "Eclairage": ["Éclairage LED intérieur", "Éclairage LED extérieur", "Lampe & Ampoule LED", "Accessoires d'Eclairage", "Eclairage de sécurité"],
+  "Sécurité": ["Portiers", "Contrôle d'Accès", "Automatisme du Bâtiment", "Sécurité Electrique", "Eclairage de Sécurité"],
+  "Outillage et Consommable": ["Outillage à Main", "Outillage Électrique", "Outillage de Marquage et Mesure", "Appareils de Mesure, Contrôle et Test", "Rangement d'Outillage", "Accessoires d'Outils", "Emporte-Pièce", "Outillage de Peinture", "Equipement de Chantier", "Fixations", "Consommables", "Protection Individuelle et Sécurité", "Quincaillerie", "Batterie, Chargeur, Pile", "Soudage"],
+  "Chute de Câble Electrique": [],
 };
+
+// Les 5 grandes categories de Groupe WORO-LINK (specialiste electrique),
+// utilisees a la place des 21+2 categories reseau/IT pour cette boutique.
+const WOROLINK_CATEGORIES = [
+  { icon: Zap, label: "Matériel Electrique" },
+  { icon: SunMedium, label: "Eclairage" },
+  { icon: ShieldCheck, label: "Sécurité" },
+  { icon: Wrench, label: "Outillage et Consommable" },
+  { icon: Cable, label: "Chute de Câble Electrique" },
+];
 
 // Extrait un nom de sous-categorie lisible depuis le chemin Odoo
 // (ex: "All / Saleable / RESEAU, MATERIEL ACTIF / Switch manageable" -> "Switch manageable")
@@ -248,7 +266,7 @@ const SITE_CONFIGS = {
     tagline: "Votre spécialiste en matériel électrique",
     accent: "#2F3297",
     logo: LOGOS["groupe-worolink"],
-    categories: reorderCategories(["CABLES ET FILS ELECTRIQUES", "TABLEAUX ELECTRIQUES", "PERIPHERIQUES, AGENCEMENT, MOBILIER", "OUTILLAGE ET MESURES"]),
+    categories: WOROLINK_CATEGORIES,
     motifVariant: 4,
     promoLabel: "Notre spécialité",
     promoText: "Le groupe qui relie tout",
