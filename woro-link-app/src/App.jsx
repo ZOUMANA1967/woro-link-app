@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Search, Home as HomeIcon, Grid3x3, ShoppingCart, User,
   Wifi, Zap, Monitor, Camera, Cable, SunMedium,
@@ -507,7 +507,27 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
 function ProductDetailScreen({ product, accent, addToCart, goBack }) {
   const [qty, setQty] = useState(1);
   const [liked, setLiked] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
+  const scrollRef = useRef(null);
   if (!product) return null;
+
+  const images = product.images && product.images.length > 0 ? product.images : [product.image];
+
+  const goToImage = (i) => {
+    setActiveImg(i);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ left: i * scrollRef.current.clientWidth, behavior: "smooth" });
+    }
+  };
+
+  const handleScroll = (e) => {
+    const w = e.target.clientWidth;
+    if (w > 0) {
+      const i = Math.round(e.target.scrollLeft / w);
+      if (i !== activeImg) setActiveImg(i);
+    }
+  };
+
   return (
     <div className="relative pb-28">
       <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3">
@@ -522,9 +542,30 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
         </div>
       </div>
 
-      <div className="-mt-10 h-72 flex items-center justify-center" style={{ background: TOKENS.sand }}>
-        <ProductImage src={product.image} iconSize={40} />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="-mt-10 h-72 flex overflow-x-auto snap-x snap-mandatory"
+        style={{ background: TOKENS.sand, scrollbarWidth: "none" }}
+      >
+        {images.map((src, i) => (
+          <div key={i} className="w-full h-full flex-shrink-0 flex items-center justify-center snap-center" style={{ minWidth: "100%" }}>
+            <ProductImage src={src} iconSize={40} />
+          </div>
+        ))}
       </div>
+      {images.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5 mt-2">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goToImage(i)}
+              className="rounded-full transition-all"
+              style={{ width: i === activeImg ? 14 : 6, height: 6, background: i === activeImg ? accent : `${TOKENS.ink}22` }}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="px-5 pt-4">
         {product.badge && (
