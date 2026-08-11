@@ -306,17 +306,17 @@ function NetworkTrail({ color, variant = 1 }) {
 // Affiche la vraie image du produit (venue d'Odoo). Si elle n'existe pas
 // ou ne charge pas, on retombe proprement sur l'icone de remplacement,
 // sans casser l'affichage.
-function ProductImage({ src, iconSize = 22 }) {
+function ProductImage({ src, iconSize = 22, fit = "contain" }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
-    return <Monitor size={iconSize} color={`${TOKENS.ink}33`} />;
+    return iconSize > 0 ? <Monitor size={iconSize} color={`${TOKENS.ink}33`} /> : null;
   }
   return (
     <img
       key={src}
       src={src}
       alt=""
-      className="w-full h-full object-contain img-fade-in"
+      className={`w-full h-full img-fade-in ${fit === "cover" ? "object-cover" : "object-contain"}`}
       onError={() => setFailed(true)}
     />
   );
@@ -440,13 +440,43 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
       </header>
 
       <div className="px-5 -mt-3">
-        <div className="relative overflow-hidden rounded-2xl px-4 py-4 flex items-center justify-between" style={{ background: config.accent }}>
-          <div>
-            <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: `${TOKENS.paper}CC` }}>{config.promoLabel || "Offre du moment"}</p>
-            <p className="text-base font-semibold mt-0.5" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.paper }}>{config.promoText || "Jusqu'à -20% sur une sélection"}</p>
-          </div>
-          <Flame size={30} color={TOKENS.paper} opacity={0.85} />
-        </div>
+        {(() => {
+          const featured = config.products && config.products[0];
+          return (
+            <button
+              onClick={() => featured && openProduct(featured)}
+              className="relative overflow-hidden rounded-2xl w-full text-left tap"
+              style={{ height: 132, background: config.accent }}
+            >
+              {featured?.image && (
+                <div className="absolute inset-0">
+                  <ProductImage src={featured.image} iconSize={0} fit="cover" />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: `linear-gradient(100deg, ${config.accent}F2 30%, ${config.accent}55 65%, ${config.accent}15 100%)` }}
+                  />
+                </div>
+              )}
+              <div className="relative h-full px-4 py-4 flex flex-col justify-between">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: `${TOKENS.paper}CC` }}>{config.promoLabel || "Offre du moment"}</p>
+                    <p className="text-base font-semibold mt-0.5 max-w-[70%]" style={{ fontFamily: TOKENS.displayFont, color: TOKENS.paper }}>{config.promoText || "Jusqu'à -20% sur une sélection"}</p>
+                  </div>
+                  {!featured?.image && <Flame size={30} color={TOKENS.paper} opacity={0.85} />}
+                </div>
+                {featured && (
+                  <span
+                    className="self-start text-[11px] font-semibold px-3 py-1.5 rounded-full"
+                    style={{ background: TOKENS.paper, color: config.accent }}
+                  >
+                    Voir l'offre →
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })()}
       </div>
 
       <section className="px-5 mt-6">
