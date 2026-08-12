@@ -429,8 +429,10 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
         <NetworkTrail color={config.accent} variant={config.motifVariant} />
         <div className="relative flex items-center justify-between mb-4">
           <div>
-            <img src={config.logo} alt={config.name} className="h-9 object-contain" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.25))" }} />
-            <p className="text-xs mt-1" style={{ color: `${TOKENS.paper}99` }}>{config.tagline}</p>
+            <div className="inline-block bg-white rounded-xl px-3 py-2" style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.15)" }}>
+              <img src={config.logo} alt={config.name} className="h-8 object-contain" />
+            </div>
+            <p className="text-xs mt-2" style={{ color: `${TOKENS.paper}99` }}>{config.tagline}</p>
           </div>
         </div>
         <button onClick={onOpenSearch} className="relative flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 w-full">
