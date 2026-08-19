@@ -425,8 +425,8 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
         </div>
       )}
 
-      <header className="relative overflow-hidden px-5 pt-5 pb-7" style={{ background: TOKENS.ink }}>
-        <NetworkTrail color={config.accent} variant={config.motifVariant} />
+      <header className="relative overflow-hidden px-5 pt-5 pb-7" style={{ background: config.accent }}>
+        <NetworkTrail color={TOKENS.paper} variant={config.motifVariant} />
         <div className="relative flex items-center justify-between mb-4">
           <div>
             <div className="inline-block bg-white rounded-xl px-3 py-2" style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.15)" }}>
