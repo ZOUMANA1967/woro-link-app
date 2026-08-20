@@ -1344,6 +1344,57 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cart, setCart] = useState({});
 
+  // ---------------------------------------------------------------------
+  // Bouton "retour" du telephone : sans ceci, l'app n'a aucun historique
+  // de navigation, donc le premier appui sur retour ferme direct l'app au
+  // lieu de revenir a l'ecran precedent. On empile un vrai historique de
+  // navigateur a chaque changement d'ecran, et on gere le bouton retour
+  // nous-memes -- avec la meme logique "appuyer 2 fois pour quitter" que
+  // les autres apps, une fois arrive a l'accueil.
+  // ---------------------------------------------------------------------
+  const isPoppingRef = useRef(false);
+  const lastBackPressRef = useRef(0);
+  const [showExitToast, setShowExitToast] = useState(false);
+
+  useEffect(() => {
+    window.history.replaceState({ screen: "home" }, "");
+
+    const handlePopState = (event) => {
+      isPoppingRef.current = true;
+      const state = event.state;
+      if (!state || !state.screen || state.screen === "home") {
+        const now = Date.now();
+        if (now - lastBackPressRef.current < 2000) {
+          // Deuxieme appui rapide sur retour depuis l'accueil : on laisse
+          // l'app se fermer normalement (on ne re-empile pas de garde).
+          return;
+        }
+        lastBackPressRef.current = now;
+        setScreen("home");
+        setShowExitToast(true);
+        setTimeout(() => setShowExitToast(false), 2000);
+        // Repousse une garde pour intercepter le prochain appui sur retour.
+        window.history.pushState({ screen: "home" }, "");
+      } else {
+        setScreen(state.screen);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Empile un nouvel etat d'historique a chaque navigation vers l'avant
+  // (clic dans l'app), mais pas quand le changement vient du bouton retour
+  // lui-meme (sinon on empilerait deux fois).
+  useEffect(() => {
+    if (isPoppingRef.current) {
+      isPoppingRef.current = false;
+      return;
+    }
+    window.history.pushState({ screen }, "");
+  }, [screen]);
+
   // Enregistre une visite pour cette boutique (une seule fois par ouverture
   // de l'app) -- alimente le panneau d'administration.
   useEffect(() => {
@@ -1529,6 +1580,20 @@ export default function App() {
       </div>
 
       {showBottomNav && <BottomNav screen={screen} setScreen={setScreen} accent={config.accent} cartCount={cartCount} />}
+
+      {showExitToast && (
+        <div
+          className="fixed left-1/2 z-50 px-4 py-2.5 rounded-full text-xs font-medium"
+          style={{
+            bottom: showBottomNav ? 76 : 20,
+            transform: "translateX(-50%)",
+            background: `${TOKENS.ink}E6`,
+            color: TOKENS.paper,
+          }}
+        >
+          Appuyez à nouveau pour quitter
+        </div>
+      )}
     </div>
   );
 }
