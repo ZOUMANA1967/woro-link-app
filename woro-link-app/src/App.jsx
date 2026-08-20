@@ -79,6 +79,9 @@ function normalize(str) {
     .toString()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[,.]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
     .toUpperCase();
 }
 
@@ -184,14 +187,16 @@ function getSubcategoryLabel(product) {
 // Sans ça, un produit simplement classe sous la grande categorie (sans
 // sous-categorie precise) matchait TOUTES les sous-categories, puisque leur
 // nom officiel commence justement par le nom de la grande categorie.
+// Tout se fait en texte deja normalise (accents/casse/ponctuation retires)
+// pour eviter tout decalage de longueur entre le texte original et normalise.
 function stripParentPrefix(subLabel, parentLabel) {
   const n = normalize(subLabel);
   const p = normalize(parentLabel || "");
   if (p && n.startsWith(p)) {
-    const rest = subLabel.slice(p.length).replace(/^[\s,/-]+/, "");
-    return rest || subLabel;
+    const rest = n.slice(p.length).trim();
+    return rest || n;
   }
-  return subLabel;
+  return n;
 }
 
 // Un produit correspond a une sous-categorie si l'un des segments de son
@@ -200,7 +205,7 @@ function stripParentPrefix(subLabel, parentLabel) {
 // qu'on affiche (ex: Odoo dit juste "CAT 5e", nous affichons "Cordon RJ45
 // CAT 5e"). Le prefixe de la grande categorie est retire avant de comparer.
 function matchesSubcategoryLabel(product, subLabel, parentLabel) {
-  const needle = normalize(stripParentPrefix(subLabel, parentLabel));
+  const needle = stripParentPrefix(subLabel, parentLabel); // deja normalise
   const segments = (product.category || "").split("/").map((s) => normalize(s.trim())).filter(Boolean);
   return segments.some((seg) => seg.includes(needle) || needle.includes(seg));
 }
