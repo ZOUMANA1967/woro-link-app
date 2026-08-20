@@ -179,22 +179,36 @@ function getSubcategoryLabel(product) {
   return last;
 }
 
+// Retire le nom de la grande categorie du debut du nom de sous-categorie,
+// s'il y est repete (ex: "Cordon RJ45 CAT 5e" sous "CORDON RJ45" -> "CAT 5e").
+// Sans ça, un produit simplement classe sous la grande categorie (sans
+// sous-categorie precise) matchait TOUTES les sous-categories, puisque leur
+// nom officiel commence justement par le nom de la grande categorie.
+function stripParentPrefix(subLabel, parentLabel) {
+  const n = normalize(subLabel);
+  const p = normalize(parentLabel || "");
+  if (p && n.startsWith(p)) {
+    const rest = subLabel.slice(p.length).replace(/^[\s,/-]+/, "");
+    return rest || subLabel;
+  }
+  return subLabel;
+}
+
 // Un produit correspond a une sous-categorie si l'un des segments de son
 // chemin Odoo (separes par "/") correspond au label -- dans un sens ou
 // l'autre, car le vrai nom Odoo est parfois plus court que le nom officiel
 // qu'on affiche (ex: Odoo dit juste "CAT 5e", nous affichons "Cordon RJ45
-// CAT 5e"). Un simple "includes" sur le chemin entier ratait ces cas a
-// cause du " / " qui casse la continuite du texte.
-function matchesSubcategoryLabel(product, subLabel) {
-  const needle = normalize(subLabel);
+// CAT 5e"). Le prefixe de la grande categorie est retire avant de comparer.
+function matchesSubcategoryLabel(product, subLabel, parentLabel) {
+  const needle = normalize(stripParentPrefix(subLabel, parentLabel));
   const segments = (product.category || "").split("/").map((s) => normalize(s.trim())).filter(Boolean);
   return segments.some((seg) => seg.includes(needle) || needle.includes(seg));
 }
 
 // Compte, dans le catalogue en direct, combien de produits appartiennent
 // a une sous-categorie precise (comparaison souple sans accents/casse).
-function countInSubcategory(products, subLabel) {
-  return products.filter((p) => matchesSubcategoryLabel(p, subLabel)).length;
+function countInSubcategory(products, subLabel, parentLabel) {
+  return products.filter((p) => matchesSubcategoryLabel(p, subLabel, parentLabel)).length;
 }
 
 // Un produit appartient a une categorie si son chemin Odoo contient
@@ -682,7 +696,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
   const subcategories = useMemo(() => {
     const officialList = ODOO_SUBCATEGORIES[current.label];
     if (officialList) {
-      return officialList.map((label) => [label, countInSubcategory(currentCategoryProducts, label)]);
+      return officialList.map((label) => [label, countInSubcategory(currentCategoryProducts, label, current.label)]);
     }
     const counts = {};
     for (const p of currentCategoryProducts) {
@@ -1411,7 +1425,7 @@ export default function App() {
     if (!selectedCategoryLabel || !allProducts) return [];
     let list = allProducts.filter((p) => matchesCategoryFilter(p, selectedCategoryLabel));
     if (selectedSubcategoryLabel) {
-      list = list.filter((p) => matchesSubcategoryLabel(p, selectedSubcategoryLabel));
+      list = list.filter((p) => matchesSubcategoryLabel(p, selectedSubcategoryLabel, selectedCategoryLabel));
     }
     return list;
   }, [selectedCategoryLabel, selectedSubcategoryLabel, allProducts]);
