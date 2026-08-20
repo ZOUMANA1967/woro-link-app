@@ -179,11 +179,22 @@ function getSubcategoryLabel(product) {
   return last;
 }
 
+// Un produit correspond a une sous-categorie si l'un des segments de son
+// chemin Odoo (separes par "/") correspond au label -- dans un sens ou
+// l'autre, car le vrai nom Odoo est parfois plus court que le nom officiel
+// qu'on affiche (ex: Odoo dit juste "CAT 5e", nous affichons "Cordon RJ45
+// CAT 5e"). Un simple "includes" sur le chemin entier ratait ces cas a
+// cause du " / " qui casse la continuite du texte.
+function matchesSubcategoryLabel(product, subLabel) {
+  const needle = normalize(subLabel);
+  const segments = (product.category || "").split("/").map((s) => normalize(s.trim())).filter(Boolean);
+  return segments.some((seg) => seg.includes(needle) || needle.includes(seg));
+}
+
 // Compte, dans le catalogue en direct, combien de produits appartiennent
 // a une sous-categorie precise (comparaison souple sans accents/casse).
 function countInSubcategory(products, subLabel) {
-  const needle = normalize(subLabel);
-  return products.filter((p) => normalize(p.category || "").includes(needle)).length;
+  return products.filter((p) => matchesSubcategoryLabel(p, subLabel)).length;
 }
 
 // Un produit appartient a une categorie si son chemin Odoo contient
@@ -772,7 +783,7 @@ function ProductListScreen({ title, products, accent, openProduct, isSubcategory
     const counts = {};
     for (const p of products) {
       const segments = (p.category || "").split("/").map((s) => s.trim()).filter(Boolean);
-      const idx = segments.findIndex((s) => normalize(s).includes(needle));
+      const idx = segments.findIndex((s) => { const n = normalize(s); return n.includes(needle) || needle.includes(n); });
       if (idx !== -1 && idx < segments.length - 1) {
         const next = segments[idx + 1];
         counts[next] = (counts[next] || 0) + 1;
@@ -1400,8 +1411,7 @@ export default function App() {
     if (!selectedCategoryLabel || !allProducts) return [];
     let list = allProducts.filter((p) => matchesCategoryFilter(p, selectedCategoryLabel));
     if (selectedSubcategoryLabel) {
-      const needle = normalize(selectedSubcategoryLabel);
-      list = list.filter((p) => normalize(p.category || "").includes(needle));
+      list = list.filter((p) => matchesSubcategoryLabel(p, selectedSubcategoryLabel));
     }
     return list;
   }, [selectedCategoryLabel, selectedSubcategoryLabel, allProducts]);
