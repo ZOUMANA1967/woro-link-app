@@ -538,7 +538,7 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
         <div className="flex gap-3 overflow-x-auto px-5 pb-1">
           {config.products.map((p) => (
             <button key={p.id} onClick={() => openProduct(p)} className="flex-shrink-0 w-36 rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-              <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+              <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
                 {p.badge && (
                   <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: p.badge.startsWith("-") ? TOKENS.clay : TOKENS.leaf, color: TOKENS.paper }}>
                     {p.badge}
@@ -608,7 +608,7 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
         ref={scrollRef}
         onScroll={handleScroll}
         className="-mt-10 h-72 flex overflow-x-auto snap-x snap-mandatory"
-        style={{ background: TOKENS.sand, scrollbarWidth: "none" }}
+        style={{ background: TOKENS.paper, scrollbarWidth: "none" }}
       >
         {images.map((src, i) => (
           <div key={i} className="w-full h-full flex-shrink-0 flex items-center justify-center snap-center" style={{ minWidth: "100%" }}>
@@ -881,7 +881,7 @@ function ProductListScreen({ title, products, accent, openProduct, isSubcategory
         <div className="grid grid-cols-2 gap-3">
           {visible.map((p) => (
             <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-              <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+              <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
                 <ProductImage src={p.image} iconSize={22} />
               </div>
               <div className="p-2.5">
@@ -945,7 +945,7 @@ function SearchScreen({ allProducts, accent, openProduct, loading }) {
           <div className="grid grid-cols-2 gap-3">
             {results.slice(0, 40).map((p) => (
               <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-                <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
                   <ProductImage src={p.image} iconSize={22} />
                 </div>
                 <div className="p-2.5">
@@ -981,7 +981,7 @@ function CartScreen({ cart, updateQty, removeItem, accent, goToCheckout }) {
           <div className="px-5 pt-4 space-y-3">
             {items.map((it) => (
               <div key={it.id} className="flex gap-3 rounded-xl p-3 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-                <div className="w-16 h-16 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                <div className="w-16 h-16 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: TOKENS.paper }}>
                   <ProductImage src={it.image} iconSize={18} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1274,7 +1274,7 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
           <div className="rounded-xl bg-white overflow-hidden" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
             {items.map((it, i) => (
               <div key={it.id} className="flex gap-3 p-3" style={{ borderBottom: i < items.length - 1 ? `1px solid ${TOKENS.ink}0A` : "none" }}>
-                <div className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: TOKENS.sand }}>
+                <div className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: TOKENS.paper }}>
                   <ProductImage src={it.image} iconSize={14} />
                 </div>
                 <div className="flex-1 min-w-0">
