@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: #FFFFFF;
+}
+
+/* Douce apparition d'un ecran quand on y navigue */
+@keyframes screenFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.screen-enter {
+  animation: screenFadeIn 0.22s ease-out;
+}
+
+/* Douce apparition d'une image une fois chargee, au lieu d'un flash brut */
+@keyframes imgFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.img-fade-in {
+  animation: imgFadeIn 0.25s ease-out;
+}
+
+/* Squelette de chargement -- pulsation douce sur fond neutre */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.skeleton {
+  background: #1B2A3D14;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+/* Petit retour tactile au clic, applique via la classe .tap */
+.tap {
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+}
+.tap:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
