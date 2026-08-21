@@ -18,7 +18,7 @@ const TOKENS = {
   clay: "#C1592B",
   leaf: "#5C7A52",
   ochre: "#D9A441",
-  paper: "#FBF8F2",
+  paper: "#FFFFFF",
   displayFont: "'Space Grotesk', sans-serif",
   bodyFont: "'IBM Plex Sans', sans-serif",
 };
