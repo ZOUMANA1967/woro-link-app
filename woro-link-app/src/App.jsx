@@ -607,12 +607,12 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="-mt-10 h-72 flex overflow-x-auto snap-x snap-mandatory"
+        className="-mt-10 h-96 flex overflow-x-auto snap-x snap-mandatory"
         style={{ background: TOKENS.paper, scrollbarWidth: "none" }}
       >
         {images.map((src, i) => (
           <div key={i} className="w-full h-full flex-shrink-0 flex items-center justify-center snap-center" style={{ minWidth: "100%" }}>
-            <ProductImage src={src} iconSize={40} />
+            <ProductImage src={src} iconSize={56} />
           </div>
         ))}
       </div>
