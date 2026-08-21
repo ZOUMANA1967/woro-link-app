@@ -521,8 +521,8 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
         <div className="grid grid-cols-3 gap-3">
           {config.categories.slice(0, 6).map(({ icon: Icon, label }, i) => (
             <button key={i} onClick={onSeeAllCategories} className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 bg-white tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" style={{ background: `${config.accent}1A` }}>
-                <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={18} iconColor={config.accent} />
+              <div className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden" style={{ background: `${config.accent}1A` }}>
+                <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={24} iconColor={config.accent} />
               </div>
               <span className="text-[10px] font-medium leading-tight text-center line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
             </button>
@@ -726,8 +726,8 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
             return (
               <button key={label} onClick={() => setActive(i)} className="w-full flex flex-col items-center gap-1.5 py-3.5 relative tap" style={{ background: isActive ? TOKENS.paper : "white" }}>
                 {isActive && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: accent }} />}
-                <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden" style={{ background: isActive ? `${accent}1A` : `${TOKENS.ink}0A` }}>
-                  <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={15} iconColor={isActive ? accent : `${TOKENS.ink}88`} />
+                <div className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden" style={{ background: isActive ? `${accent}1A` : `${TOKENS.ink}0A` }}>
+                  <CategoryImage src={findImage(categoryImages, label)} icon={Icon} iconSize={20} iconColor={isActive ? accent : `${TOKENS.ink}88`} />
                 </div>
                 <span className="text-[9.5px] text-center leading-tight px-1 line-clamp-3" style={{ color: isActive ? TOKENS.ink : `${TOKENS.ink}77`, fontWeight: isActive ? 600 : 400 }}>{label}</span>
               </button>
@@ -751,7 +751,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
             <div className="grid grid-cols-2 gap-2.5">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-                  <div className="w-12 h-12 rounded-lg skeleton" />
+                  <div className="w-16 h-16 rounded-lg skeleton" />
                   <div className="w-16 h-2.5 rounded skeleton" />
                   <div className="w-10 h-2 rounded skeleton" />
                 </div>
@@ -768,8 +768,8 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
                   className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white text-center tap"
                   style={{ border: `1px solid ${TOKENS.ink}0F` }}
                 >
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: TOKENS.paper }}>
-                    <ProductImage src={findImage(subcategoryImages, label)} iconSize={18} />
+                  <div className="w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: TOKENS.paper }}>
+                    <ProductImage src={findImage(subcategoryImages, label)} iconSize={26} />
                   </div>
                   <span className="text-[10.5px] leading-tight line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
                   <span className="text-[9px]" style={{ color: `${TOKENS.ink}55` }}>{count} produit{count > 1 ? "s" : ""}</span>
