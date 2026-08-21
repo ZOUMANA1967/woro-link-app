@@ -768,7 +768,7 @@ function CategoriesScreen({ config, accent, onBrowseCategory, onOpenSearch, allP
                   className="flex flex-col items-center gap-1.5 rounded-xl py-3.5 px-2 bg-white text-center tap"
                   style={{ border: `1px solid ${TOKENS.ink}0F` }}
                 >
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: TOKENS.sand }}>
+                  <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: TOKENS.paper }}>
                     <ProductImage src={findImage(subcategoryImages, label)} iconSize={18} />
                   </div>
                   <span className="text-[10.5px] leading-tight line-clamp-2" style={{ color: TOKENS.ink }}>{label}</span>
