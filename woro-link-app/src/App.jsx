@@ -539,7 +539,11 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
           {config.products.map((p) => (
             <button key={p.id} onClick={() => openProduct(p)} className="flex-shrink-0 w-36 rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
-                {p.badge && (
+                {typeof p.stock === "number" && p.stock <= 0 ? (
+                  <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.clay, color: TOKENS.paper }}>
+                    Rupture
+                  </span>
+                ) : p.badge && (
                   <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: p.badge.startsWith("-") ? TOKENS.clay : TOKENS.leaf, color: TOKENS.paper }}>
                     {p.badge}
                   </span>
@@ -574,6 +578,13 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
   if (!product) return null;
 
   const images = product.images && product.images.length > 0 ? product.images : [product.image];
+  // Le stock n'est connu que pour les produits venus du catalogue en direct
+  // (les exemples de demarrage n'ont pas ce champ). Comme sur le vrai site,
+  // une rupture ne bloque PAS l'achat -- elle allonge juste le delai de
+  // livraison affiche au client.
+  const hasStockInfo = typeof product.stock === "number";
+  const outOfStock = hasStockInfo && product.stock <= 0;
+  const maxQty = hasStockInfo && product.stock > 0 ? product.stock : 99;
 
   const goToImage = (i) => {
     setActiveImg(i);
@@ -646,9 +657,17 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
           {product.old && <span className="text-sm line-through" style={{ color: `${TOKENS.ink}55` }}>{formatF(product.old)} F</span>}
         </div>
 
+        {hasStockInfo && (
+          <p className="text-xs mt-1.5 font-medium" style={{ color: outOfStock ? TOKENS.clay : (product.stock <= 5 ? TOKENS.ochre : TOKENS.leaf) }}>
+            {outOfStock
+              ? "L'article n'est pas en stock. Le délai de livraison est de 7 à 10 jours ouvrables."
+              : product.stock <= 5 ? `Plus que ${product.stock} en stock` : "En stock"}
+          </p>
+        )}
+
         <div className="flex items-center gap-4 mt-4 rounded-xl px-3 py-2.5" style={{ background: `${TOKENS.leaf}12` }}>
           <div className="flex items-center gap-1.5"><ShieldCheck size={15} color={TOKENS.leaf} /><span className="text-[11px]" style={{ color: TOKENS.ink }}>Garantie 12 mois</span></div>
-          <div className="flex items-center gap-1.5"><Truck size={15} color={TOKENS.leaf} /><span className="text-[11px]" style={{ color: TOKENS.ink }}>Livraison 24-48h</span></div>
+          <div className="flex items-center gap-1.5"><Truck size={15} color={TOKENS.leaf} /><span className="text-[11px]" style={{ color: TOKENS.ink }}>{outOfStock ? "Livraison 7 à 10 jours" : "Livraison 24-48h"}</span></div>
         </div>
 
         {product.description && (
@@ -663,7 +682,7 @@ function ProductDetailScreen({ product, accent, addToCart, goBack }) {
           <div className="flex items-center gap-3 rounded-lg px-1" style={{ border: `1px solid ${TOKENS.ink}22` }}>
             <button className="w-7 h-7 flex items-center justify-center" onClick={() => setQty(Math.max(1, qty - 1))}><Minus size={13} color={TOKENS.ink} /></button>
             <span className="text-sm w-4 text-center" style={{ color: TOKENS.ink }}>{qty}</span>
-            <button className="w-7 h-7 flex items-center justify-center" onClick={() => setQty(qty + 1)}><Plus size={13} color={TOKENS.ink} /></button>
+            <button className="w-7 h-7 flex items-center justify-center" onClick={() => setQty(Math.min(maxQty, qty + 1))}><Plus size={13} color={TOKENS.ink} /></button>
           </div>
         </div>
       </div>
@@ -881,7 +900,12 @@ function ProductListScreen({ title, products, accent, openProduct, isSubcategory
         <div className="grid grid-cols-2 gap-3">
           {visible.map((p) => (
             <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-              <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
+              <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
+                {typeof p.stock === "number" && p.stock <= 0 && (
+                  <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.clay, color: TOKENS.paper }}>
+                    Rupture
+                  </span>
+                )}
                 <ProductImage src={p.image} iconSize={22} />
               </div>
               <div className="p-2.5">
@@ -945,7 +969,12 @@ function SearchScreen({ allProducts, accent, openProduct, loading }) {
           <div className="grid grid-cols-2 gap-3">
             {results.slice(0, 40).map((p) => (
               <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
-                <div className="h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
+                <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
+                  {typeof p.stock === "number" && p.stock <= 0 && (
+                    <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.clay, color: TOKENS.paper }}>
+                      Rupture
+                    </span>
+                  )}
                   <ProductImage src={p.image} iconSize={22} />
                 </div>
                 <div className="p-2.5">
@@ -1215,6 +1244,7 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
   const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem("woroCustomerPhone") || "");
   const [customerEmail, setCustomerEmail] = useState(() => localStorage.getItem("woroCustomerEmail") || "");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [orderError, setOrderError] = useState(null);
   const items = Object.values(cart);
   const PAYMENT_METHODS = [
     { id: "om", icon: Smartphone, label: "Orange Money" },
@@ -1316,6 +1346,11 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
         </div>
       </div>
 
+      {orderError && (
+        <div className="fixed left-1/2 z-40 px-4 py-2.5 rounded-xl text-xs font-medium max-w-[90%] text-center" style={{ bottom: 76, transform: "translateX(-50%)", background: `${TOKENS.clay}E6`, color: TOKENS.paper }}>
+          {orderError}
+        </div>
+      )}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white flex items-center gap-3 px-5 py-3.5" style={{ borderTop: `1px solid ${TOKENS.ink}0F` }}>
         <button
           className="flex-1 rounded-xl py-3 text-sm font-semibold disabled:opacity-60"
@@ -1323,8 +1358,13 @@ function CheckoutScreen({ cart, accent, goBack, onConfirm }) {
           disabled={submitting || !canConfirm}
           onClick={async () => {
             setSubmitting(true);
-            await onConfirm({ customerName, customerPhone, customerEmail, deliveryAddress });
+            setOrderError(null);
+            const result = await onConfirm({ customerName, customerPhone, customerEmail, deliveryAddress });
             setSubmitting(false);
+            if (!result?.ok) {
+              setOrderError(result?.error || "Une erreur est survenue, veuillez réessayer.");
+              setTimeout(() => setOrderError(null), 5000);
+            }
           }}
         >
           {submitting ? "Envoi en cours…" : canConfirm ? "Confirmer la commande" : "Renseignez vos coordonnées"}
@@ -1522,11 +1562,17 @@ export default function App() {
     const items = Object.values(cart);
     const total = items.reduce((s, it) => s + it.price * it.qty, 0) + 2000;
     try {
-      await fetch(`${RELAY_URL}/api/orders`, {
+      const res = await fetch(`${RELAY_URL}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
         body: JSON.stringify({ siteKey, items, total, customerName, customerPhone, customerEmail, deliveryAddress }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Stock insuffisant (ou autre refus) : on garde le panier intact et
+        // on remonte l'erreur, le client ne doit pas croire que c'est passé.
+        return { ok: false, error: data.error || "Cette commande n'a pas pu être validée." };
+      }
       // Retient l'identite du client pour que "Mon compte" le reconnaisse
       // automatiquement la prochaine fois, sans avoir a se re-identifier.
       if (customerPhone) {
@@ -1534,13 +1580,13 @@ export default function App() {
         localStorage.setItem("woroCustomerPhone", customerPhone);
         if (customerEmail) localStorage.setItem("woroCustomerEmail", customerEmail);
       }
+      setCart({});
+      setScreen("home");
+      return { ok: true };
     } catch (err) {
       console.warn("Envoi de la commande impossible pour le moment:", err.message);
-      // On continue quand meme -- le client ne doit pas rester bloque
-      // meme si le relais est momentanement injoignable.
+      return { ok: false, error: "Impossible de contacter le serveur, veuillez réessayer." };
     }
-    setCart({});
-    setScreen("home");
   };
 
   const showBottomNav = ["home", "categories", "cart", "account"].includes(screen);
