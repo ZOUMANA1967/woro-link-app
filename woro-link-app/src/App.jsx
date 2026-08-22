@@ -543,6 +543,10 @@ function HomeScreen({ config, siteKey, setSiteKey, openProduct, productsLoading,
                   <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.clay, color: TOKENS.paper }}>
                     Rupture
                   </span>
+                ) : typeof p.stock === "number" && p.stock > 0 ? (
+                  <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.leaf, color: TOKENS.paper }}>
+                    Stock
+                  </span>
                 ) : p.badge && (
                   <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: p.badge.startsWith("-") ? TOKENS.clay : TOKENS.leaf, color: TOKENS.paper }}>
                     {p.badge}
@@ -901,9 +905,13 @@ function ProductListScreen({ title, products, accent, openProduct, isSubcategory
           {visible.map((p) => (
             <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
               <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
-                {typeof p.stock === "number" && p.stock <= 0 && (
+                {typeof p.stock === "number" && p.stock <= 0 ? (
                   <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.clay, color: TOKENS.paper }}>
                     Rupture
+                  </span>
+                ) : typeof p.stock === "number" && p.stock > 0 && (
+                  <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.leaf, color: TOKENS.paper }}>
+                    Stock
                   </span>
                 )}
                 <ProductImage src={p.image} iconSize={22} />
@@ -970,9 +978,13 @@ function SearchScreen({ allProducts, accent, openProduct, loading }) {
             {results.slice(0, 40).map((p) => (
               <button key={p.id} onClick={() => openProduct(p)} className="rounded-xl bg-white overflow-hidden text-left tap" style={{ border: `1px solid ${TOKENS.ink}0F` }}>
                 <div className="relative h-24 flex items-center justify-center" style={{ background: TOKENS.paper }}>
-                  {typeof p.stock === "number" && p.stock <= 0 && (
+                  {typeof p.stock === "number" && p.stock <= 0 ? (
                     <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.clay, color: TOKENS.paper }}>
                       Rupture
+                    </span>
+                  ) : typeof p.stock === "number" && p.stock > 0 && (
+                    <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: TOKENS.leaf, color: TOKENS.paper }}>
+                      Stock
                     </span>
                   )}
                   <ProductImage src={p.image} iconSize={22} />
