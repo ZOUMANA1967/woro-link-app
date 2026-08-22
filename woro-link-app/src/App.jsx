@@ -153,19 +153,22 @@ const ODOO_SUBCATEGORIES = {
   "TELEPHONIE": ["Adaptateurs, Repartiteurs, Doubleurs", "Fiches, Prises, Boitiers, Conjoncteurs Et Coupleurs", "Casques Filaires", "Casque Sans Fil", "Casques Et Oreillettes Bluetooth", "Cordons Et Accessoires Casques", "Talkies-walkies", "Teleconference", "Telephonie Filaire", "Telephonie Sans Fil", "Telephonie Voip", "Autocom Ip", "Visioconference"],
   "ADAPTATEURS": ["Alimentation", "Bluetooth", "Displayport", "Fibre Optique", "Hdmi", "Jack", "Ps/2", "Rj45 Ethernet", "Smartphone", "Telephone", "Usb", "Vga", "Wifi"],
   // Arborescence dediee a Groupe WORO-LINK (specialiste materiel electrique),
-  // fournie par l'utilisateur -- distincte des 21+2 categories reseau/IT
-  // utilisees par les 3 autres boutiques.
-  "Matériel Electrique": ["Câbles et fils Electriques", "Tableaux et Coffret Electrique", "Appareillages Modulaire", "Appareillages Mural", "Accessoires d'Installation", "Conduites et Canalisations"],
-  "Eclairage": ["Éclairage LED intérieur", "Éclairage LED extérieur", "Lampe & Ampoule LED", "Accessoires d'Eclairage", "Eclairage de sécurité"],
-  "Sécurité": ["Portiers", "Contrôle d'Accès", "Automatisme du Bâtiment", "Sécurité Electrique", "Eclairage de Sécurité"],
+  // corrigee a partir de l'export reel des categories Odoo -- "Matériel
+  // Electrique" ne correspondait a rien de reel (le vrai nom est
+  // "Electricite"), et les sous-categories precedentes etaient inventees.
+  "Electricite": ["Cables et fils electriques", "Tableau coffret électrique", "Appareillages modulaire legrand", "Appareillages modulaire hager", "Appareillages modulaire schneider", "Appareillages mural legrand", "Appareillages mural schneider", "Accessoires d'installation", "Conduits et canalisations"],
+  "Eclairage": ["Luminaires interieurs", "Ampoules"],
+  "Sécurité": ["Portiers"],
   "Outillage et Consommable": ["Outillage à Main", "Outillage Électrique", "Outillage de Marquage et Mesure", "Appareils de Mesure, Contrôle et Test", "Rangement d'Outillage", "Accessoires d'Outils", "Emporte-Pièce", "Outillage de Peinture", "Equipement de Chantier", "Fixations", "Consommables", "Protection Individuelle et Sécurité", "Quincaillerie", "Batterie, Chargeur, Pile", "Soudage"],
   "Chute de Câble Electrique": [],
 };
 
 // Les 5 grandes categories de Groupe WORO-LINK (specialiste electrique),
 // utilisees a la place des 21+2 categories reseau/IT pour cette boutique.
+// "Outillage et Consommable" n'existe pas encore cote Odoo -- elle
+// n'affichera aucun produit tant qu'elle n'y sera pas creee.
 const WOROLINK_CATEGORIES = [
-  { icon: Zap, label: "Matériel Electrique" },
+  { icon: Zap, label: "Electricite" },
   { icon: SunMedium, label: "Eclairage" },
   { icon: ShieldCheck, label: "Sécurité" },
   { icon: Wrench, label: "Outillage et Consommable" },
